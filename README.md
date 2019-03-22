@@ -39,7 +39,8 @@
 
 
 8. # REFERENCE
-- [용팔이세상](https://dragon82.tistory.com/10)
-- [Hison.me](https://hiseon.me/2018/01/30/pcap-basic-example/)
-- [ehclub.co.kr](https://ehclub.co.kr/2548)
-- [pcak wiki](https://en.wikipedia.org/wiki/Pcap)
+- [용팔이세상 - pcap 분석](https://dragon82.tistory.com/10)
+- [Hison.me - pcap 분석](https://hiseon.me/2018/01/30/pcap-basic-example/)
+- [ehclub.co.kr - pcap 분석](https://ehclub.co.kr/2548)
+- [pcak wiki - pcap 분석](https://en.wikipedia.org/wiki/Pcap)
+- [패킷인사이드 - 리틀인디언과 빅인디언의 차이](http://www.packetinside.com/2010/10/%EB%A6%AC%ED%8B%80%EC%97%94%EB%94%94%EC%95%88little-endian%EA%B3%BC-%EB%B9%85%EC%97%94%EB%94%94%EC%95%88big-endian%EC%9D%B4%ED%95%B4%ED%95%98%EA%B8%B0.html)
