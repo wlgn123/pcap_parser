@@ -16,18 +16,23 @@ TITLE_PRINT_FORMAT = "{0:#^100}"
 
 # BinaryFile Class
 class BinaryFile:
-    path = None
-    file_size = None
-    bytes_array = None
+    path = None         # 파일 경로
+    file_size = None    # 파일 사이즈(KB)
+    bytes_array = None  # 파일을 byte Array로 변환한 데이터
     
     def __init__(self, path):
+        # byte이 저장될 변수
         string = None
+        # 파일 path
         self.path = path
+        # 파일 사이즈
         self.file_size = os.stat(path).st_size * 0.001
         
+        # 파일 오픈 -> read -> 클로즈
         with open(path, 'rb') as f:
             string = f.read()
-            
+        
+        # byte 객체변수에 저장
         self.bytes_array = string
         
     def make_hex_sep(string):
@@ -55,7 +60,8 @@ class BinaryFile:
         print("#{}#".format(path_str.center(len(title_str)-2)))
         print("#{}#".format(size_str.center(len(title_str)-2)))
         print("#" * len(title_str))
-        
+    
+    # byte array 얻기 반환 : bytearray, bytearray의 길이
     def get_bytes_array(self):
         return self.bytes_array, len(self.bytes_array)
 
@@ -72,9 +78,9 @@ class PcapGlobalHeader:
     
     magic_number  = None  # 매직넘버
     pcap_version  = None  # pcap 버전
-    this_zone     = None  # time_zone
-    sigfigs       = None   # ? (항상 0임)
-    snaplen       = None   # 버퍼의 크기
+    this_zone     = None  # 컴퓨터 시간과 GMT(UTC)시간과의 차이 ( 왠만하면 0 )
+    sigfigs       = None   # 캡쳐했을때의 timestamp의 정확성 (항상 0임)
+    snaplen       = None   # 캡쳐된 패킷 바이트의 최대 길이이다.
     network_adapter = None # link layer의 타입
     
     # bytes array를 입력하여 정보를 추출하는 메소드
