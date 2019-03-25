@@ -25,22 +25,51 @@
 - 실행해본다.(f5)
 - ![실행사진](/img/run1.PNG)
 
-6. # 현재까지 진행된 척도
+# 기타
+1. 글로벌 헤드 뜯어보기
+- spyder를 실행 시킨다.
+- pcap_parser.py를 열어서 실행시킨다.
+- 우측 하단의 콘솔창에 아래 코드를 입력한다
+- binascii.b2a_hex(bfile.bytes_array[:24])
+- binascii 모듈을 이용하여 byte를 hex로 변환하는 코드이다.
+   글로벌 헤더의 길이가 24byte이므로 0번째인덱스에서 23번째 인덱스만을 변환하였다.
+- 출력된 hex값을 분석해본다.
+
+
+2. # 현재까지 진행된 척도
 - Binary 파일을 다루기 위한 클래스 생성
 - Pcap binary 파일의 Global Header 분석
 - Pcap Packet Header의 분석
 - 각 Header별 클래스 생성
 
-7. # 추후 진행해야되는 사항
+3. # 추후 진행해야되는 사항
 - packet header 다음에 나오게될 packer body 부분의 분석 필요
 - 파일 read 및 write, packet 분석 시 발생할 수 있는 Exception 분석
 - 각 Exception을 캐치하기 위한 알고리즘 분석
 - 각 클래스들을 패키지화 하여야함
 
 
-8. # REFERENCE
+4. # REFERENCE
 - [용팔이세상 - pcap 분석](https://dragon82.tistory.com/10)
 - [Hison.me - pcap 분석](https://hiseon.me/2018/01/30/pcap-basic-example/)
 - [ehclub.co.kr - pcap 분석](https://ehclub.co.kr/2548)
 - [pcak wiki - pcap 분석](https://en.wikipedia.org/wiki/Pcap)
 - [패킷인사이드 - 리틀인디언과 빅인디언의 차이](http://www.packetinside.com/2010/10/%EB%A6%AC%ED%8B%80%EC%97%94%EB%94%94%EC%95%88little-endian%EA%B3%BC-%EB%B9%85%EC%97%94%EB%94%94%EC%95%88big-endian%EC%9D%B4%ED%95%B4%ED%95%98%EA%B8%B0.html)
+- [Libpcap File Format Wiki](https://wiki.wireshark.org/Development/LibpcapFileFormat)
+- [링크계층 헤더의 종류](https://www.tcpdump.org/linktypes.html)
+
+
+5. # pcap 파일 분석
+- ![실행사진](/img/global_header.PNG)
+- 그림 출처 : https://wiki.wireshark.org/Development/LibpcapFileFormat
+- 글로벌 헤더의 c 구조체 사진이다.
+- magic_number(4byte) : pcap 파일임을 명시하는 바이트이다. 항상 0xa1b2c3d4 (little endian) 또는 0xd4c3b2a1 (big endian)을 가지고있다.
+- version_major(2byte) : libpcap 의 메이저버전이다. 현재 메이저 버전은 2이다.
+- version_minor(2byte) : libpcap 의 마이너버전이다. 현재 마이너 버전은 4이다
+- major버전과 minor버전을 합치면 버전을 알 수있는데 현재 버전은 2.4가된다.
+- thiszone(4byte): thizone은 파일을 저장한 컴퓨터의 시간과 GMT(UTC) 시간과의 차이를 나타낸다. 특별한경우가 아니라면 0값으로 박힌다.
+- sigfigs(4byte): 캡쳐했을때의 timestamp의 정확성이다. 0으로 고정되어 들어온다.
+- snaplen(4byte): 캡쳐 된 패킷의 최대 길이이다. (패킷의 길이가 snaplen을 넘을 수 없다.)
+- network(4byte): 링크계층의 헤더 유형이다.(1일 경우 이더넷 ...)
+- 글로벌 헤더의 총 길이는 24byte인것을 알 수있다.
+
