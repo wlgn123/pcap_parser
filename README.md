@@ -11,7 +11,7 @@
 
 4. # IDE 설치
 - activate py37
-- conda install 
+- conda install spyder
 
 4. # IDE 실행
 - activate py37
@@ -26,7 +26,7 @@
 - ![실행사진](/img/run1.PNG)
 
 # 기타
-1. 글로벌 헤드 뜯어보기
+1. # 글로벌 헤드 뜯어보기
 - spyder를 실행 시킨다.
 - pcap_parser.py를 열어서 실행시킨다.
 - 우측 하단의 콘솔창에 아래 코드를 입력한다
