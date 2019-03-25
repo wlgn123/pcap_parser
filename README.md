@@ -11,7 +11,7 @@
 
 4. # IDE 설치
 - activate py37
-- conda install 
+- conda install spyder
 
 4. # IDE 실행
 - activate py37
