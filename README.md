@@ -60,16 +60,26 @@
 
 
 5. # pcap 파일 분석
-- ![실행사진](/img/global_header.PNG)
+- ![글로벌헤더](/img/global_header.PNG)
 - 그림 출처 : https://wiki.wireshark.org/Development/LibpcapFileFormat
-- 글로벌 헤더의 c 구조체 사진이다.
+- 글로벌 헤더의 구조이다.
 - magic_number(4byte) : pcap 파일임을 명시하는 바이트이다. 항상 0xa1b2c3d4 (little endian) 또는 0xd4c3b2a1 (big endian)을 가지고있다.
 - version_major(2byte) : libpcap 의 메이저버전이다. 현재 메이저 버전은 2이다.
 - version_minor(2byte) : libpcap 의 마이너버전이다. 현재 마이너 버전은 4이다
 - major버전과 minor버전을 합치면 버전을 알 수있는데 현재 버전은 2.4가된다.
 - thiszone(4byte): thizone은 파일을 저장한 컴퓨터의 시간과 GMT(UTC) 시간과의 차이를 나타낸다. 특별한경우가 아니라면 0값으로 박힌다.
 - sigfigs(4byte): 캡쳐했을때의 timestamp의 정확성이다. 0으로 고정되어 들어온다.
-- snaplen(4byte): 캡쳐 된 패킷의 최대 길이이다. (패킷의 길이가 snaplen을 넘을 수 없다.)
+- snaplen(4byte): 캡쳐 된 패킷 바이트의 최대 길이이다. (패킷의 길이가 snaplen을 넘을 수 없다.)
 - network(4byte): 링크계층의 헤더 유형이다.(1일 경우 이더넷 ...)
 - 글로벌 헤더의 총 길이는 24byte인것을 알 수있다.
 
+#
+- ![패킷헤더](/img/packet_header.PNG)
+- 그림 출처 : https://wiki.wireshark.org/Development/LibpcapFileFormat
+- 패킷 헤더의 구조이다.
+- ts_sec(4byte) : 패킷의 타임스탬프(second)
+- ts_usec(4byte) : 패킷의 타임스템프 (microsecond)
+- incl_len(4byte) : 패킷을 저장했을때의 byte(8bit = octets) 갯수이다.
+- origin_len(4byte) : 패킷의 길이이다.
+- incl_len은 snaplen보다 클 수 없다. 또한 origin_len보다 클 수 없다.
+- origin_len은 incl_len과 snaplen보다 클 수있다. ( wireshark에서 설정한 패킷의 최대 길이(snaplen)보다 실제 패킷의 길이(origin_len)가 클 경우)
