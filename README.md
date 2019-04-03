@@ -64,8 +64,8 @@
 - 그림 출처 : https://wiki.wireshark.org/Development/LibpcapFileFormat
 - 글로벌 헤더의 구조이다.
 - magic_number(4byte) : pcap 파일임을 명시하는 바이트이다. 항상 0xa1b2c3d4 (little endian) 또는 0xd4c3b2a1 (big endian)을 가지고있다.
-- version_major(2byte) : libpcap 의 메이저버전이다. 현재 메이저 버전은 2이다.
-- version_minor(2byte) : libpcap 의 마이너버전이다. 현재 마이너 버전은 4이다
+- version_major(2byte) : pcap 파일 포맷의 메이저버전이다. 현재 메이저 버전은 2이다.
+- version_minor(2byte) : pcap 파일 포맷의 마이너버전이다. 현재 마이너 버전은 4이다
 - major버전과 minor버전을 합치면 버전을 알 수있는데 현재 버전은 2.4가된다.
 - thiszone(4byte): thizone은 파일을 저장한 컴퓨터의 시간과 GMT(UTC) 시간과의 차이를 나타낸다. 특별한경우가 아니라면 0값으로 박힌다.
 - sigfigs(4byte): 캡쳐했을때의 timestamp의 정확성이다. 0으로 고정되어 들어온다.
