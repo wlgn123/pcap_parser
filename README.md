@@ -83,3 +83,4 @@
 - origin_len(4byte) : 패킷의 길이이다.
 - incl_len은 snaplen보다 클 수 없다. 또한 origin_len보다 클 수 없다.
 - origin_len은 incl_len과 snaplen보다 클 수있다. ( wireshark에서 설정한 패킷의 최대 길이(snaplen)보다 실제 패킷의 길이(origin_len)가 클 경우)
+fsdf
