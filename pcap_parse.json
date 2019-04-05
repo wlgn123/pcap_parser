@@ -1,0 +1,42 @@
+
+{
+	"info": {
+		"version": 2.4,
+                "snaplen": 246000,
+                "packetCnt": 2
+	},
+        "packets":
+                [
+                        {
+                                "packetnum": 0,
+                                "datetime": "2019-01-31 13:41.23461432",
+                                "incl_len": 60,
+                                "origin_len": 60,
+                                "packetdata":{
+                                        "sip": "192.168.0.1",
+                                        "dip": "8.8.8.8",
+                                        "protocol": 16,
+                                        "sport": 0,
+                                        "dport": 0,
+                                        "data": "0a 0b 1a dd 11 aa"
+                                }
+                        },
+                        {
+                                "packetnum": 1,
+                                "datetime": "2019-01-31 13:41.23461432",
+                                "incl_len": 60,
+                                "origin_len": 60,
+                                "packetdata":{
+                                        "protocolType":"TCP",
+                                        "smac":"ff ff ff ff ff",
+                                        "dmac":"ff ff ff ff ff",
+                                        "sip": "192.168.0.1",
+                                        "dip": "0.0.0.0",
+                                        "protocol": 16,
+                                        "sport": 0,
+                                        "dport": 0,
+                                        "data": "0a 0b 1a dd 11 aa"
+                                }
+                        }
+                ]
+}

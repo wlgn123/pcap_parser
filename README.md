@@ -41,12 +41,14 @@
 - Pcap binary 파일의 Global Header 분석
 - Pcap Packet Header의 분석
 - 각 Header별 클래스 생성
+- 각 클래스를 Pcap이라는 클래스로 묶음.
 
 3. # 추후 진행해야되는 사항
-- packet header 다음에 나오게될 packer body 부분의 분석 필요
+- packer body 부분의 분석 필요
 - 파일 read 및 write, packet 분석 시 발생할 수 있는 Exception 분석
 - 각 Exception을 캐치하기 위한 알고리즘 분석
-- 각 클래스들을 패키지화 하여야함
+- pcap 저장 및 로드 기능 추가
+- pcap 을 로드 한 후, 다른 pcap 클래스와 비교할 수 있는 기능이 필요
 
 
 4. # REFERENCE
@@ -84,3 +86,16 @@
 - incl_len은 snaplen보다 클 수 없다. 또한 origin_len보다 클 수 없다.
 - origin_len은 incl_len과 snaplen보다 클 수있다. ( wireshark에서 설정한 패킷의 최대 길이(snaplen)보다 실제 패킷의 길이(origin_len)가 클 경우)
 fsdf
+
+# 프로젝트 텍스트 파일 저장 포맷
+   -  json 형식의 텍스트 포맷을 사용.
+   - 텍스트 포맷은 pcap_parse.json을 통해 확인 가능.
+   - ![패킷헤더](/img/pcap_save_file_format.png)
+
+
+
+
+# pcap_parse V0.1 (Current)
+   - Binary 클래스, Pcap 클래스, PcapPacketHeader 클래스, PcapPacketData 클래스 생성
+   - 각 클래스 별 정보 출력 기능 추가. ![](/img/info_cap_1.png)
+   - 파일 로드 시, prograss Bar 기능 추가 ![](/img/prograssBar.png)
