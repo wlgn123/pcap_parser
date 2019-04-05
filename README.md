@@ -97,5 +97,5 @@ fsdf
 
 # pcap_parse V0.1 (Current)
    - Binary 클래스, Pcap 클래스, PcapPacketHeader 클래스, PcapPacketData 클래스 생성
-   - 각 클래스 별 정보 출력 기능 추가. ![](/img/info_cap_1.png)
-   - 파일 로드 시, prograss Bar 기능 추가 ![](/img/prograssBar.png)
+   - 각 클래스 별 정보 출력 기능 추가. ![](/img/info_cap_1.PNG)
+   - 파일 로드 시, prograss Bar 기능 추가 ![](/img/prograssBar.PNG)
