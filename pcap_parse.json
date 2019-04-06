@@ -13,8 +13,11 @@
                                 "incl_len": 60,
                                 "origin_len": 60,
                                 "packetdata":{
+                                        "protocolType":"TCP",
+                                        "smac":"ff ff ff ff ff",
+                                        "dmac":"ff ff ff ff ff",
                                         "sip": "192.168.0.1",
-                                        "dip": "8.8.8.8",
+                                        "dip": "0.0.0.0",
                                         "protocol": 16,
                                         "sport": 0,
                                         "dport": 0,
