@@ -128,11 +128,12 @@ class PcapGlobalHeader:
         ntwork_adt = "network adapter : {}".format(self.network_adapter)
         title_str = TITLE_PRINT_FORMAT.format(" Pcap Global Header Info ")
         
+        print("")
         print(title_str)
-        print("#{}#".format(pcap_str.center(len(title_str)-2)))
-        print("#{}#".format(ntwork_adt.center(len(title_str)-2)))
-        print("#{}#".format(snaplen_str.center(len(title_str)-2)))
-        print("-" * len(title_str))
+        print("{1}#{2}{0}{1}#{2}".format(pcap_str.center(len(title_str)-11), bcolors.OKBLUE, bcolors.ENDC))
+        print("{1}#{2}{0}{1}#{2}".format(ntwork_adt.center(len(title_str)-11), bcolors.OKBLUE, bcolors.ENDC))
+        print("{1}#{2}{0}{1}#{2}".format(snaplen_str.center(len(title_str)-11), bcolors.OKBLUE, bcolors.ENDC))
+        print("-" * (len(title_str)-9))
 
 
 # In[246]:
@@ -334,7 +335,7 @@ class Pcap:
 # In[250]:
 #pcap = Pcap('./test2.pcap')
 pcap = Pcap('./test3.pcap')
-
-pcap.print_packet_range(0, 10)
+pcap.global_header.print_info()
+pcap.print_packet_range(0, 5)
 
 #pcap.print_all_packets()
