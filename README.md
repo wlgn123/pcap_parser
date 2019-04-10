@@ -13,14 +13,17 @@
 - activate py37
 - conda install spyder
 
-4. # IDE 실행
+5. # 필요 패키지 설치
+- pip install tqdm
+
+6. # IDE 실행
 - activate py37
 - spyder 엔터
 - 굳이 py37 환경을 activate 하는 이유는 spyder IDE에서 py37 환경을 이용하기 위해서이다.
 
-5. # 소스 파일 실행
+7. # 소스 파일 실행
 - git을 클론한다.
-- '4' 를 진행하여 IDE를 실행한다.
+- '3' 를 진행하여 IDE를 실행한다.
 - spyder 에서 git을 클론한 폴더의 경로에 존재하는 pcap_parser.py 를 불러온다
 - 실행해본다.(f5)
 - ![실행사진](/img/run1.PNG)
