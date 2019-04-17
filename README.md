@@ -20,10 +20,15 @@
 
 5. # 소스 파일 실행
 - git을 클론한다.
-- '4' 를 진행하여 IDE를 실행한다.
-- spyder 에서 git을 클론한 폴더의 경로에 존재하는 pcap_parser.py 를 불러온다
-- 실행해본다.(f5)
-- ![실행사진](/img/run1.PNG)
+- '3' 을 진행하여 가상환경에 접속한다.
+- cmd 명령어를 통해 깃 폴더의 python으로 이동한다.
+- 실행 명령어: python pcap_parser.py
+- 필수 옵션: --pcap pcap파일경로
+- 도움말: -help, --help
+- ![도움말](/img/help.PNG)
+- 예제: python pcap_parser.py --pcap ./test3.pcap
+
+- 실행화면 ![실행화면](/img/run2.PNG)
 
 # 기타
 1. # 글로벌 헤드 뜯어보기
@@ -99,3 +104,19 @@ fsdf
    - Binary 클래스, Pcap 클래스, PcapPacketHeader 클래스, PcapPacketData 클래스 생성
    - 각 클래스 별 정보 출력 기능 추가. ![](/img/info_cap_1.PNG)
    - 파일 로드 시, prograss Bar 기능 추가 ![](/img/prograssBar.PNG)
+
+# pcap_parse V0.2 (devel)
+   - 텍스트 사용자 인터페이스를 위한 Tui 클래스 개발 ![실행화면](/img/run2.PNG)
+
+   - argsparser 추가를 통해 python 파일 실행 시, pcap파일을 명령인자로 전달받도록 수정.
+
+   - argsparser를 이용하여 -h, --help 명령을 통해 도움말을 호출할 수 있도록 수정.![도움말](/img/help.PNG)
+
+   - 사용자가 pcap 패킷데이터를 페이지 단위(5개 씩)로 조회할 수 있도록 메뉴 기능 구현
+
+   - 소켓 서버 생성(통신 대기(수신쪽)) (예정)
+
+   - 소켓 클라이언트 생성(통신 하기(송신쪽)) (예정)
+
+   - pcap 클래스 json 변환 기능 개발 (예정)
+   
