@@ -136,7 +136,7 @@ class Tui:
             # 이전 메뉴로 이동
             if(select == '2'):
                 return
-
+    # 추가 작업 필요
     def socket_open(self):
         # 소켓 오픈 ( IP_V4, )
         server_sock = socket(AF_INET, SOCK_STREAM)
@@ -146,7 +146,7 @@ class Tui:
 # In[250]:
 
 # argsparse 생성
-parser = argparse.ArgumentParser(description="pcap File Parser v0.2, create by 홍지후, 정다운, 송영훈, 김가겸")
+parser = argparse.ArgumentParser(description="pcap File Parser v0.2, create by 홍지후, 정다운, 송영훈, 김가겸, 고채훈, 장인기")
 # 필수 인자 추가
 parser.add_argument('--pcap', metavar='file_path', type=str, required=True, help='pcap파일의 경로를 입력해주세요.')
 
