@@ -13,12 +13,15 @@
 - activate py37
 - conda install spyder
 
-4. # IDE 실행
+5. # 필요 패키지 설치
+- pip install tqdm
+
+6. # IDE 실행
 - activate py37
 - spyder 엔터
 - 굳이 py37 환경을 activate 하는 이유는 spyder IDE에서 py37 환경을 이용하기 위해서이다.
 
-5. # 소스 파일 실행
+7. # 소스 파일 실행
 - git을 클론한다.
 - '3' 을 진행하여 가상환경에 접속한다.
 - cmd 명령어를 통해 깃 폴더의 python으로 이동한다.

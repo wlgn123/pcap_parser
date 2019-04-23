@@ -121,11 +121,14 @@ class PcapPacketHeader:
 class PcapPacketData:
     # 프로토콜 타입 딕셔너리
     PROTOCOL_TYPE = {
-        "": "ARP",
+        '6': "TCP",
+        '17': "UDP",
+        "34525": "ARP"
     }
     IP_TYPE = {
-        '8': "TCP",
-        "1544": "ARP"
+        #"34525":"IP_V6",
+        "2048":"IP_V4",
+        "2054":"ARP"
     }
     # MAC ADDRESS 들(Source, Destination) 의 바이트 길이
     MAC_LENGTH = 12
@@ -139,8 +142,18 @@ class PcapPacketData:
     
     # 목적지 Mac
     dmac = None
+    # 목적지 Mac
+    dip = None
+    # 목적지 포트
+    dport = None
     # 출발지 Mac
     smac = None
+    # 출발지 IP
+    sip = None
+    # 출발지 포트
+    sport = None
+    # 서포트 하지않는 패킷 유무
+    not_surport = False
     
     # Pcap Packet Data 클래스 초기화 ( include_len 을 받는다. )
     def __init__(self, incl_len):
@@ -153,43 +166,85 @@ class PcapPacketData:
         self.get_mac_addr()
 
         self.get_type()
-
-        self.get_header()
         
+        if(not(self.not_surport)):
+            self.get_header()
+            
         return bytes_arr[self.incl_len:]
     
     # 맥 주소를 얻는다.
     def get_mac_addr(self):
-        self.dmac = binascii.b2a_hex(self.data[:6])
-        self.smac = binascii.b2a_hex(self.data[6:12])
+        self.dmac = str(binascii.b2a_hex(self.data[:6])).replace('b', '').replace("'",'')
+        self.smac = str(binascii.b2a_hex(self.data[6:12])).replace('b', '').replace("'",'')
+        
+        self.dmac = "{}:{}:{}:{}:{}:{}".format(self.dmac[0:2], self.dmac[2:4], self.dmac[4:6], self.dmac[6:8], self.dmac[8:10], self.dmac[10:12])
+        self.smac = "{}:{}:{}:{}:{}:{}".format(self.smac[0:2], self.smac[2:4], self.smac[4:6], self.smac[6:8], self.smac[8:10], self.smac[10:12])
+        
         self.data = self.data[self.MAC_LENGTH:]
 
     def get_type(self):
-        self.type_ = str(int.from_bytes(self.data[:2]  ,byteorder='little'))
-        self.type_ = self.IP_TYPE[self.type_]
+        self.type_ = str(int.from_bytes(self.data[:2]  ,byteorder='big'))        
+        if( self.type_ not in self.IP_TYPE):
+            self.not_surport = True
+            return
         self.data = self.data[2:]
+        
+        self.type_ = self.IP_TYPE[self.type_]
 
     def get_header(self):
-        if( self.type_ is not 'ARP'):
-            tmp = self.data[0]
-            print(self.type_, tmp)
-            self.header_len = int(bin(tmp).replace('b', '')[4:], base=2) * 4
+        if(self.type_ == 'ARP'):
+            self.protocolType = "ARP"
+        else:
+            # 필요없는 데이터 버림
+            self.data = self.data[9:]
+            # 프로토콜타입 얻어오기
+            self.protocolType = str(int.from_bytes(self.data[:1]  ,byteorder='big'))
+            
+            if self.protocolType not in self.PROTOCOL_TYPE:
+                self.not_surport = True
+                return
+            
+            self.protocolType = self.PROTOCOL_TYPE[self.protocolType]
+            # 프로토콜타입 얻은 후 버림
+            self.data = self.data[3:]
+            #
+            self.sip = "{}.{}.{}.{}".format(self.data[0], self.data[1], self.data[2], self.data[3])
+            self.data = self.data[4:]
+            
+            self.dip = "{}.{}.{}.{}".format(self.data[0], self.data[1], self.data[2], self.data[3])
+            self.data = self.data[4:]
+            
+            self.dport  = str(int.from_bytes(self.data[:2]  ,byteorder='big'))
+            self.sport = str(int.from_bytes(self.data[2:4]  ,byteorder='big'))
+            
+            self.data = self.data[4:]
+            
 
     # 정보를 출력함.
     def print_info(self):
         smac_str = "Source Mac Address : {}".format(self.smac)
         dmac_str = "Dest Mac Address : {}".format(self.dmac)
         type_str = "Type : {}".format(self.type_)
+        proto_str = "Protocol : {}".format(self.protocolType)
+        sip_str = "Source IP : {}".format(self.sip)
+        dip_str = "Dest IP : {}".format(self.dip)
+        sport_str = "Source Port : {}".format(self.sport)
+        dport_str = "Dest Port : {}".format(self.dport)
+        
         title_str = TITLE_PRINT_FORMAT.format(" Packet Data Info ")
         
         print(title_str)
         print("{1}#{2}{0}{1}#{2}".format(smac_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
         print("{1}#{2}{0}{1}#{2}".format(dmac_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
         print("{1}#{2}{0}{1}#{2}".format(type_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
-        print("{1}#{2}{0}{1}#{2}".format(self.data.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
+        print("{1}#{2}{0}{1}#{2}".format(proto_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
+        print("{1}#{2}{0}{1}#{2}".format(sip_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
+        print("{1}#{2}{0}{1}#{2}".format(dip_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
+        print("{1}#{2}{0}{1}#{2}".format(sport_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
+        print("{1}#{2}{0}{1}#{2}".format(dport_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
+        #print("{1}#{2}{0}{1}#{2}".format(self.data.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
         print("{1}{0}{2}".format("-" * (len(title_str)-9),bcolors.OKBLUE, bcolors.ENDC))
         print()
-        
 # In[249]:
 
 # Pcap 클래스
@@ -244,7 +299,11 @@ class Pcap:
             
             # byte_array를 패킷 데이터에 전달 -> 패킷 데이터 내용 생성 -> 나머지 byte_array 반환
             data = PcapPacketData(header.incl_len)
-            self.byte_arr = data.get_info_from_bytes(self.byte_arr)   
+            self.byte_arr = data.get_info_from_bytes(self.byte_arr)
+            
+            if(data.not_surport):
+                self.cnt -= 1
+                continue
             
             # list에 append
             self.header_list.append(header)
