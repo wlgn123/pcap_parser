@@ -337,7 +337,7 @@ class Pcap:
     # 패킷 범위 출력
     def print_packet_range(self, start, end):
         print()
-        
+                
         for packet_id in range(start, end):
             # 패킷번호에 맞는 해더와 데이터의 정보 출력.
             self.header_list[packet_id].print_info()

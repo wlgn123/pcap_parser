@@ -31,7 +31,7 @@
 - ![도움말](/img/help.PNG)
 - 예제: python pcap_parser.py --pcap ./test3.pcap
 
-- 실행화면 ![실행화면](/img/run2.PNG)
+- 실행화면 ![실행화면](/img/run3.PNG) ![실행화면](/img/run4.PNG)
 
 # 기타
 1. # 글로벌 헤드 뜯어보기
@@ -101,25 +101,32 @@ fsdf
    - ![패킷헤더](/img/pcap_save_file_format.png)
 
 
-# pcap_parse V0.1 (Current)
+# pcap_parse V0.1 (Old)
    - Binary 클래스, Pcap 클래스, PcapPacketHeader 클래스, PcapPacketData 클래스 생성
    - 각 클래스 별 정보 출력 기능 추가. ![](/img/info_cap_1.PNG)
    - 파일 로드 시, prograss Bar 기능 추가 ![](/img/prograssBar.PNG)
 
-# pcap_parse V0.2 (devel)
-   - 텍스트 사용자 인터페이스를 위한 Tui 클래스 개발 ![실행화면](/img/run2.PNG)
+# pcap_parse V0.2 (Current)
+   - 텍스트 사용자 인터페이스를 위한 Tui 클래스 개발 ![실행화면](/img/run3.PNG)
 
    - argsparser 추가를 통해 python 파일 실행 시, pcap파일을 명령인자로 전달받도록 수정.
 
    - argsparser를 이용하여 -h, --help 명령을 통해 도움말을 호출할 수 있도록 수정.![도움말](/img/help.PNG)
 
-   - 사용자가 pcap 패킷데이터를 페이지 단위(5개 씩)로 조회할 수 있도록 메뉴 기능 구현
+   - 사용자가 pcap 패킷데이터를 페이지 단위로 조회할 수 있도록 메뉴 기능 구현
+
+   - 페이지 단위 조회 시, 현재페이지, 마지막 페이지 등 사용자가 페이지이동을 편하게 할 수 있는 기능 추가 ![실행화면](/img/run4.PNG)
 
    - 기존의 pcap_parser.py에 선언하였던 클래스들을 각 기능별 파일로 분리함.
       - BinaryFile.py : 파일 load 관련 클래스
       - Pcap.py : Pcap관련 클래스 패키지
       - TextFormat.py : 출력 설정 관련 패키지
       - pcap_parser.py : 메인 프로그램
+
+   - IP버전과 프로토콜은 IP_V4 와 TCP, UDP, ARP로 제한( 그 외의 패킷은 스킵한다.)
+
+# pcap_parser V0.3 (Devel)
+   - 페이지 단위 조회 시, 원하는 페이지 번호를 입력하여 이동하는 기능 추가(예정)
 
    - 소켓 서버 생성(통신 대기(수신쪽)) (예정)
 
