@@ -94,10 +94,22 @@ class Tui:
                 '2':'2. 이전 메뉴로 이동'
         }
         
+        page_per_packets = 4
+        
+        now_page = 1
+        tot_len = int(len(self.pcap.data_list))
+        tot_page = int(tot_len / page_per_packets)
+        
+        # 마지막 페이지가 페이지별 패킷 갯수로 나뉘는지 확인( 3개, 2개, 등..)
+        last =  page_per_packets % tot_page
+        
+        if(last > 0):
+            tot_page += 1
+                    
         # 페이지 시작 번호
         start = 0
         # 페이지 종료 번호
-        end= 5
+        end= page_per_packets
         
         # 사용자가 이전메뉴로 복귀하기 전까지 무한반복
         while(True):
@@ -113,22 +125,41 @@ class Tui:
                     # 범위 출력
                     self.pcap.print_packet_range(start, end)
                     # 이전페이지, 다음페이지, 이전메뉴중 선택
-                    select = self.select_menu(menu_list=['1','2','3'], desc="1 : 이전페이지, 2 : 다음페이지, 3 : 이전 메뉴")
+                    select = self.select_menu(menu_list=['1','2','3','4','5'], desc="({} / {}) 1: 첫번째페이지    2: 이전페이지    3: 다음페이지    4: 마지막페이지    5: 이전 메뉴".format(now_page, tot_page))
                     
-                    # 이전페이지일 경우
+                    # 첫번째 페이지 이동
                     if(select == '1'):
+                        now_page = 1
+                        start = 0
+                        end = page_per_packets
+                    # 마지막 페이지 이동
+                    elif(select == '4'):
+                        now_page = tot_page
+                        start = ((tot_page * page_per_packets) - page_per_packets)
+                        end = (tot_page * page_per_packets) -1
+                    # 이전페이지일 경우
+                    elif(select == '2'):
                         # 맨첫 페이지 일 경우
                         if(start == 0):
                             print("첫번째 페이지 입니다")
                         else:
-                            start -= 5
-                            end -= 5
+                            start -= page_per_packets
+                            end -= page_per_packets
+                            now_page -= 1 
                     
                     # 다음페이지일 경우
-                    elif(select == '2'):
-                        start += 5
-                        end += 5
-                        
+                    elif(select == '3'):
+                        if(now_page >= tot_page):
+                            print("마지막 페이지 입니다.")
+                        else:
+                            start += page_per_packets
+                            end += page_per_packets
+                            
+                            if(end >= tot_len):
+                                end = tot_len
+                                
+                            now_page += 1
+                    
                     # 이전메뉴일 경우
                     else:
                         break
