@@ -134,3 +134,15 @@ fsdf
 
    - pcap 클래스 json 변환 기능 개발 (예정)
    
+# 현재 발견된 보안이슈
+   - pcap_parser.py:57: High: input
+   Argument 1 to this function call should be checked to ensure that it does not
+   come from an untrusted source without first verifying that it contains nothing
+   dangerous.
+
+   - Analyzing BinaryFile.py
+   BinaryFile.py:20: Medium: stat
+   A potential TOCTOU (Time Of Check, Time Of Use) vulnerability exists.  This is
+   the first line where a check has occured.
+   The following line(s) contain uses that may match up with this check:
+   23 (open)
