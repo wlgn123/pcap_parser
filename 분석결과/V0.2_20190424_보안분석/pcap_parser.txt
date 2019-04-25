@@ -1,0 +1,14 @@
+Entries in perl database: 33
+Entries in ruby database: 46
+Entries in python database: 62
+Entries in c database: 334
+Entries in php database: 55
+Analyzing pcap_parser.py
+pcap_parser.py:57: High: input
+Argument 1 to this function call should be checked to ensure that it does not
+come from an untrusted source without first verifying that it contains nothing
+dangerous.
+
+Total lines analyzed: 188
+Total time 0.000000 seconds
+-2147483648 lines per second
