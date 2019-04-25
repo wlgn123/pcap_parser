@@ -33,6 +33,24 @@
 
 - 실행화면 ![실행화면](/img/run3.PNG) ![실행화면](/img/run4.PNG)
 
+
+# 빌드 파일 실행
+
+- 빌드 파일은 별도의 파이썬 환경을 설치하지않아도 사용 가능하다.
+
+- 깃을 클론한다.
+
+- cmd를 킨다.
+
+- cd 명령어로 깃 클론 폴더 하위의 dist 폴더로 이동.
+
+- pcap_parser.exe --pcap pcap파일경로
+
+- ex : pcap_parser.exe --pcap ../python/test3.cap
+
+- ![빌드파일실행](/img/run_build_file.PNG)
+
+
 # 기타
 1. # 글로벌 헤드 뜯어보기
 - spyder를 실행 시킨다.
