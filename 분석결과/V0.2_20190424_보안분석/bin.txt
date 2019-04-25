@@ -1,0 +1,15 @@
+Entries in perl database: 33
+Entries in ruby database: 46
+Entries in python database: 62
+Entries in c database: 334
+Entries in php database: 55
+Analyzing BinaryFile.py
+BinaryFile.py:20: Medium: stat
+A potential TOCTOU (Time Of Check, Time Of Use) vulnerability exists.  This is
+the first line where a check has occured.
+The following line(s) contain uses that may match up with this check:
+23 (open)
+
+Total lines analyzed: 58
+Total time 0.000000 seconds
+-2147483648 lines per second
