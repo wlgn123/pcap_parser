@@ -37,13 +37,15 @@ class Tui:
         self.main()
     
     # 메뉴 출력
-    def show_menus(self, menus):
+    def show_menus(self, menus, use_menus=['1','2','3','4']):
         # 타이틀 출력
         title_str = MENU_PRINT_FORMAT.format(" 메뉴를 선택하세요. ")
         print(title_str)
         
         # 각 메뉴들을 포맷에 맞게 출력
         for menu in menus:
+            if(menu not in use_menus):
+                continue
             print("{1}#{2}{0}{1}#{2}".format(menus[menu].center(len(title_str)-9),bcolors.OKBLUE, bcolors.ENDC))
             
         print("{1}{0}{2}".format("-" * (len(title_str)-1),bcolors.OKBLUE, bcolors.ENDC))
@@ -68,12 +70,25 @@ class Tui:
     
     # 메인 기능 
     def main(self):
+        if(self.pcap.loaded):
+            self.pcap.save()
+        else:
+            print()
+            print("--pcap 명령을 통해 pcap파일을 불러오지 않았습니다.")
+            print("'통신 하기(송신)'와 '파일 내용 확인' 메뉴를 이용할 수 없습니다.")
+
         # 사용자가 프로그램을 종료할 때 까지 반복
         while(True):
-            # 메인 메뉴 출력
-            self.show_menus(self.MENU)
             # 메뉴 선택
-            select = self.select_menu(['1','2','3','4'])
+            if(self.pcap.loaded):
+                # 메인 메뉴 출력
+                self.show_menus(self.MENU)
+                select = self.select_menu(['1','2','3','4'])
+            else:
+                # 메인 메뉴 출력 ( 1번 메뉴와 4번 메뉴만)
+                self.show_menus(self.MENU, ['1','4'])
+                select = self.select_menu(['1', '4'])
+
             # 파일 내용확인
             if(select == '3'):
                 self.show_pcap_data()
@@ -179,7 +194,7 @@ class Tui:
 # argsparse 생성
 parser = argparse.ArgumentParser(description="pcap File Parser v0.2, create by 홍지후, 정다운, 송영훈, 김가겸, 고채훈, 장인기")
 # 필수 인자 추가
-parser.add_argument('--pcap', metavar='file_path', type=str, required=True, help='pcap파일의 경로를 입력해주세요.')
+parser.add_argument('--pcap', metavar='file_path', type=str, required=False, help='pcap파일의 경로를 입력해주세요.')
 
 # 사용자로부터 전달받은 args
 args = parser.parse_args()

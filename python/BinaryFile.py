@@ -15,16 +15,22 @@ class BinaryFile:
     
     # 초기화 ( 파일 경로 )
     def __init__(self, path):
-        string = None
-        self.path = path
-        self.file_size = os.stat(path).st_size * 0.001
-        
-		# 파일읽음 -> 바이트 어레이 -> self.bytes_array 에 담기
-        with open(path, 'rb') as f:
-            string = f.read()
+        try:
+            if(path is not None):
+                string = None
+                self.path = path
+                self.file_size = os.stat(path).st_size * 0.001
+                self.name = os.path.basename(self.path)
+                self.name = self.name.replace(".pcap", "")
 
-        self.bytes_array = string
-    
+                # 파일읽음 -> 바이트 어레이 -> self.bytes_array 에 담기
+                with open(path, 'rb') as f:
+                    string = f.read()
+
+                self.bytes_array = string
+        except Exception:
+            return None
+
     # 헥스 단위 여백을 추가하기 위한 메소드
     def make_hex_sep(self, string):
         new_string = ""
