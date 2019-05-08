@@ -4,6 +4,7 @@
 from datetime import datetime
 import binascii
 import sys
+import json
 
 # 프로그래스바를 위하여 사용
 from tqdm import tqdm
@@ -65,7 +66,6 @@ class PcapGlobalHeader:
         print("{1}#{2}{0}{1}#{2}".format(ntwork_adt.center(len(title_str)-11), bcolors.OKBLUE, bcolors.ENDC))
         print("{1}#{2}{0}{1}#{2}".format(snaplen_str.center(len(title_str)-11), bcolors.OKBLUE, bcolors.ENDC))
         print("-" * (len(title_str)-9))
-
 
 # In[246]:
 
@@ -259,25 +259,31 @@ class Pcap:
     data_list = []
     # 총 패킷 갯수
     cnt = 0
-    
+    # pcap이 로드되었는지 여부
+    loaded = False
+
     #  Pcap 초기화 ( pcap 파일의 경로 )
     def __init__(self, pcap_path):
         try:
             # 바이너리파일 객체 초기화
             self.binary = BinaryFile(pcap_path)
+
+            if(self.binary.path is not None):
+                # 바이너리파일 객체로부터 pcap파일의 byte array와 byte의 길이를 받음.
+                self.byte_arr, self.byte_len = self.binary.get_bytes_array()
+                # 글로벌 해더 객체 초기화 
+                self.global_header = PcapGlobalHeader()
+                # byte_array를 글로벌 헤더에 전달 -> 글로벌 헤더 내용 생성 -> 나머지 byte_array 반환
+                self.byte_arr = self.global_header.get_info_from_bytes(self.byte_arr)
+                
+                # packet 헤더 및 데이터 얻기
+                self.get_packets()
+                # 로드성공 
+                self.loaded = True
         except FileNotFoundError:
             print("올바른 파일이 아니거나 파일이 존재하지 않습니다. 다시 확인해주세요.")
             sys.exit(0)
-            
-        # 바이너리파일 객체로부터 pcap파일의 byte array와 byte의 길이를 받음.
-        self.byte_arr, self.byte_len = self.binary.get_bytes_array()
-        # 글로벌 해더 객체 초기화 
-        self.global_header = PcapGlobalHeader()
-        # byte_array를 글로벌 헤더에 전달 -> 글로벌 헤더 내용 생성 -> 나머지 byte_array 반환
-        self.byte_arr = self.global_header.get_info_from_bytes(self.byte_arr)
-        
-        # packet 헤더 및 데이터 얻기
-        self.get_packets()
+
     
     # packet 헤더 리스트 및 pakcet 데이터 리스트 초기화
     def get_packets(self):
@@ -320,6 +326,7 @@ class Pcap:
             self.header_list[i].print_info()
             self.data_list[i].print_info()
         print()
+
     # 지정된 패킷(패킷번호를 통하여) 정보 출력
     def print_packet(self, packet_id):
         # 만약 패킷번호가 패킷총갯수보다 클 경우 메소드 종료
@@ -342,9 +349,57 @@ class Pcap:
             # 패킷번호에 맞는 해더와 데이터의 정보 출력.
             self.header_list[packet_id].print_info()
             self.data_list[packet_id].print_info()
-            
     
     def save(self):
-        # 추가 필요 
-        return False
+        with open('{}.json'.format(self.binary.name), 'w') as f:
+            return json.dump(self.to_dict(), f, indent=4)
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
     
+    def to_dict(self):
+        # 기본 json 구조 정의
+        pcap_dict = {
+            "info":{
+                "version": self.global_header.pcap_version,
+                "snaplen": self.global_header.snaplen,
+                "packetCnt": self.cnt
+            },
+            "packets":[]
+        }
+        
+        # 패킷 해더 & 데이터 반복
+        for i in range(self.cnt):
+            header = self.header_list[i]
+            data = self.data_list[i]
+
+            packet_dict = {
+                "packetnum": header.cnt,
+                "datetime": header.ts.strftime("%Y-%m-%d %H:%M:%S"),
+                "incl_len": header.incl_len,
+                "origin_len": header.orig_len,
+                "packetdata": ""
+            }
+            data_dict = {
+                "type": data.type_,
+                "smac": data.smac,
+                "dmac": data.dmac,
+                "sip": data.sip,
+                "dip": data.dip,
+                "protocol": data.protocolType,
+                "sport": data.sport,
+                "dport": data.dport,
+                "data": ""
+            }
+
+            packet_dict["packetdata"] = data_dict
+            pcap_dict["packets"].append(packet_dict)
+
+        return pcap_dict
+
+
+
+
+
+
+
