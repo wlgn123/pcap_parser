@@ -13,6 +13,9 @@ from TextFormat import bcolors, MENU_PRINT_FORMAT, TITLE_PRINT_FORMAT
 # 파일 로드 클래스
 from BinaryFile import BinaryFile
 
+def pcap_diff_checker(origin_pcap, file_pcap):
+    print("########################")
+    
 # Pcap Global Header Class
 class PcapGlobalHeader:
     # Pcap Global Header의 총 byte 길이
@@ -261,6 +264,8 @@ class Pcap:
     cnt = 0
     # pcap이 로드되었는지 여부
     loaded = False
+    # json 파일이름
+    json_file_name = None 
 
     #  Pcap 초기화 ( pcap 파일의 경로 )
     def __init__(self, pcap_path):
@@ -351,7 +356,9 @@ class Pcap:
             self.data_list[packet_id].print_info()
     
     def save(self):
-        with open('{}.json'.format(self.binary.name), 'w') as f:
+        self.json_file_name = "{}.json".format(self.binary.name)
+
+        with open(self.json_file_name, 'w') as f:
             return json.dump(self.to_dict(), f, indent=4)
 
     def to_json(self):
@@ -397,9 +404,45 @@ class Pcap:
 
         return pcap_dict
 
+    def json_to_pcap(self, file_name = None, json_string = None):
+        json_dict = ""
+        
+        # 파일이름이 지정된 경우 json 파일 내용 불러오기
+        if(file_name is not None):
+            with open(file_name, 'r') as f:
+                json_dict = json.loads(f.read())
+        # json 문자열이 들어온 경우
+        elif(json_string is not None):
+            json_dict = json.loads(json_string)
+        else:
+            print("file_name 혹은 json_string가 없습니다.")
 
+        # 글로벌 헤더 초기화
+        self.global_header = PcapGlobalHeader()
 
+        # 글로벌 헤더 내용 파싱
+        self.global_header.magic_number = 0
+        self.global_header.network_adapter = ''
+        self.global_header.pcap_version = json_dict['info']['version']
+        self.global_header.snaplen = json_dict['info']['snaplen']
 
+        packet_list = json_dict['packets']
+        # 패킷 json 리스트 반복
+        for packet in packet_list:
+            # 패킷 해더 초기화
+            header = PcapPacketHeader()
+            # 패킷 헤더 파싱
+            header.cnt = packet['packetnum']
+            header.ts = datetime.strptime(packet['datetime'], "%Y-%m-%d %H:%M:%S")
+            header.incl_len = packet['incl_len'] 
+            header.orig_len = packet['origin_len']
 
+            data_dict = packet['packetdata']
+            # 패킷 데이터 초기화
+            data = PcapPacketData(header.incl_len)
+            # 패킷 데이터 파싱
+            data.type_ = data_dict['type']
 
-
+            self.header_list.append(header)
+            self.data_list.append(data)
+        self.global_header.print_info()
