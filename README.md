@@ -163,18 +163,28 @@ fsdf
       - pcpa 인자를 통해 pcap파일을 불러오지 않은 경우에는 메뉴에서 2번(통신하기(송신))과 3번(파일 내용 확인) 기능을 사용할 수 없습니다.
       - pcap 인자 사용시 화면 ![pcpa 인자 사용시](img/use_pcap.PNG)
       - pcap 인자 미사용시 화면  ![pcpa 인자 미사용시](img/not_use_pcap.PNG)
+
    - 소켓 서버 - 소켓 클라이언트 통신을 통해 json파일을 통신 가능
+   
    - json파일을 Pcap 클래스로 파싱하는 기능 개발 진행 중 (80% 진행)
+
    - 소켓 서버 생성(통신 대기(수신쪽))
       - SocketServer 클래스 개발
       - SocketClient로부터 json파일을 다운로드 받는 기능 추가,
       - 통신 대기(수신) 메뉴 선택 시, 자기자신의 IP와 통신을 위해 사용된 포트를 출력한 후 클라이언트의 접속 대기 ![alt](img/socket_wait.PNG)
       - 클라이언트로부터 통신 받은 json파일을 Pcap 클래스로 파싱 후 메인화면에서 사용할 수 있도록 기능 개발 ![alt](img/socket_file_conn.PNG)
 
-   - 소켓 클라이언트 생성(통신 하기(송신쪽)) (예정)
+   - 소켓 클라이언트 생성(통신 하기(송신쪽))
       - SocketClient 클래스 개발
       - 통신 하기(송신) 메뉴 선택 시, 통신하고자하는 컴퓨터의 IP를 입력 받게 개발 ![alt](img/input_ip.PNG) ![alt](img/client_file_con.PNG)
       - 통신 하기(송신)의 서브메뉴로서 1. 자동스킵모드 , 2. 패킷 확인 모드, 3. 통신종료가 생김, v0.4에 해당 메뉴의 대한 기능 개발 예정
+
+# pcap_parser V0.4 (Devel)
+   - 소켓 클라이언트 기능 추가(통신 하기(송신)) (진행중)
+      - 1. 자동스킵모드, 2. 패킷확인모드 기능 개발 
+
+   - 실행 인자로 --json 추가 예정
+
 # 현재 발견된 보안이슈
    - pcap_parser.py:57: High: input
    Argument 1 to this function call should be checked to ensure that it does not
