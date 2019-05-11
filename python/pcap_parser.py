@@ -8,11 +8,172 @@ import sys
 # 파이썬 아규먼트를 위해사용
 import argparse
 # 소켓 통신 모듈 불러오기 
-from socket import AF_INET, socket, SOCK_STREAM
+from socket import AF_INET, socket, SOCK_STREAM, gethostbyname, gethostname
 # 텍스트 포맷 관련 import
 from TextFormat import bcolors, MENU_PRINT_FORMAT, TITLE_PRINT_FORMAT
 # Pcap 클래스
 from Pcap import Pcap
+
+# In[245]:
+
+# 소켓 서버 클래스(리시버)
+class SocketServer:
+    sock = None
+    ip = None
+    connected = False
+
+    def __init__(self, ip = None,port=59595):
+        if(ip is None):
+            self.ip = gethostbyname(gethostname())
+        else:
+            self.ip = ip
+
+        print(self.ip)
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.bind((self.ip, port))
+        sock.settimeout(20)
+        self.sock = sock
+
+        print("통신 대기를 위한 소켓이 {}:{} 를 통해 열렸습니다.".format(self.ip, port))
+
+    def connect(self):
+        self.sock.listen(0)
+        print("CONNECT WAIT...")
+        client, addr = self.sock.accept()
+        client.settimeout(10)
+
+        print("CONNECTED FROM {}".format(addr))
+        self.connected = True
+
+        return client
+
+    def wait_pcap(self):
+        file_pcap = Pcap(None)
+
+        client = self.connect()
+        
+        # 받은 json 파일을 저장할 파일명
+        file_name = None
+
+        try:
+            BUF_SIZE = 1024
+            
+            command = client.recv(4)
+
+            if(command == b'FILE'):
+                data = client.recv(BUF_SIZE)
+                file_name = data.decode('utf-8')
+                
+                if(b'{' in data):
+                    file_name = file_name.split('{')[0]
+                    data = data[len(file_name):]
+                else:
+                    data = b''
+
+                file_name = "recived_"+ file_name
+                
+                with open(file_name, 'wb') as f:
+                    f.write(data)
+
+                    while True:
+                        data = client.recv(BUF_SIZE)
+                        if not data:
+                            break
+                        if(b'EOF' in data):
+                            f.write(data[:-3])
+                            break
+
+                        f.write(data)
+                print("파일 수신 성공 - 저장된 파일명 : {}".format(file_name))
+                
+                client.send(b"EOF")
+
+                file_pcap.json_to_pcap(file_name=file_name)
+                file_pcap.loaded = True
+                return file_pcap
+
+        except ConnectionAbortedError as e:
+            print("연결 중단")
+            print(str(e))
+        except ConnectionRefusedError as e:
+            print("연결 도중 문제가 발생했습니다. : ConnectionRefusedError")
+            print(str(e))
+        except ConnectionResetError as e:
+            print("연결이 초기화 되었습니다. : ConnectionResetError")
+            print(str(e))
+        except ConnectionError:
+            print("연결 도중 문제가 발생했습니다. : ConnextionError")
+            print(str(e))
+        except Exception as e:
+            print(str(e))
+        finally:
+            client.close()
+
+        self.sock.close()
+        self.connected = False
+
+        return file_name
+
+# 소켓 클라이언트 클래스(센더)
+class SocketClient:
+    sock = None
+    connected = False
+    def __init__(self, host, port=59595):
+        sock = socket(AF_INET, SOCK_STREAM)
+        self.host = host
+        self.port = port
+        self.sock = sock
+
+    def connect(self):
+        print("WAIT CONNECTION")
+        self.sock.connect((self.host, self.port))
+        self.connected = True
+        print("CONNECTION SUCCESS")
+
+    def send(self, data):
+        if(self.connected):
+            self.sock.sendall(data.encode())
+
+    def send_file(self, file_name):
+        if(self.connected):
+            try:
+                # 버퍼 사이즈 지정
+                BUF_SIZE = 1024
+                # 파일 전송 신호 보내기
+                self.send("FILE")
+                # 파일 이름 전송
+                self.send(file_name)
+                # 파일 열기
+                f = open(file_name, 'rb')
+                l = f.read(BUF_SIZE)
+
+                # 파일의 내용을 버퍼사이즈 만큼 반복 통신, EOF(End Of File)일 경우 반복문 종료
+                while(l):
+                    self.sock.send(l)
+                    l = f.read(BUF_SIZE)
+
+                # 파일 전송 종료 신호 보내기
+                self.sock.send(b"EOF")
+
+                # 서버측으로부터 파일전송이 완료되었는지 신호 받기
+                eof = self.sock.recv(BUF_SIZE)
+
+                # 서버측으로부터 파일전소 완료 신호가 잘 도착했는지 확인
+                if(eof == b'EOF'):
+                    print("파일 송신 성공")
+                else:
+                    print("파일 송신 실패, 다시 시도해주세요.")
+                    raise Exception()
+
+                    
+            except Exception as e:
+                print(str(e))
+            finally:
+                f.close()
+
+    def close(self):
+        self.sock.close()
+        self.connected = False
 
 # In[245]:
 
@@ -85,9 +246,47 @@ class Tui:
                 self.show_menus(self.MENU)
                 select = self.select_menu(['1','2','3','4'])
             else:
-                # 메인 메뉴 출력 ( 1번 메뉴와 4번 메뉴만)
+                # 메인 메뉴 출력 (1번 메뉴와 4번 메뉴만)
                 self.show_menus(self.MENU, ['1','4'])
                 select = self.select_menu(['1', '4'])
+
+            # 통신대기(수신)
+            if(select == '1'):
+                reciver = SocketServer()
+                self.pcap = reciver.wait_pcap()
+
+
+            if(select == '2'):
+                # IP 입력 요청
+                ip = input("상대 컴퓨터의 IP를 입력해주세요. : ")
+
+                # 소켓 클라이언트 생성 ( IP: 사용자 입력, 포트 : 59595로 통일)
+                sender = SocketClient(ip)
+                # 소켓 연결
+                sender.connect()
+                # json 파일 전송
+                sender.send_file(self.pcap.json_file_name)
+
+                # 통신 메뉴 딕셔너리
+                CONN_MENU = {
+                    '1':'1. 자동 스킵 모드',
+                    '2':'2. 패킷 확인 모드',
+                    '3':'3. 통신 종료'
+                }
+
+                # 통신 메뉴 보여주기
+                self.show_menus(CONN_MENU, ['1','2','3'])
+                # 메뉴 선택
+                conn_select = self.select_menu(['1','2','3'])
+                
+                # 이전 메뉴로 이동시에 메인 메뉴로 이동
+                if(conn_select == '3'):
+                    sender.close()
+                    continue
+                
+                # 자동 스킵모드의 경우
+
+                # 패킷 확인 모드의 경우
 
             # 파일 내용확인
             if(select == '3'):
@@ -182,19 +381,14 @@ class Tui:
             # 이전 메뉴로 이동
             if(select == '2'):
                 return
-    # 추가 작업 필요
-    def socket_open(self):
-        # 소켓 오픈 ( IP_V4, )
-        server_sock = socket(AF_INET, SOCK_STREAM)
-        server_sock.bind('', 59595)
-        server_sock.listen(1)
-
 # In[250]:
 
 # argsparse 생성
-parser = argparse.ArgumentParser(description="pcap File Parser v0.2, create by 홍지후, 정다운, 송영훈, 김가겸, 고채훈, 장인기")
-# 필수 인자 추가
-parser.add_argument('--pcap', metavar='file_path', type=str, required=False, help='pcap파일의 경로를 입력해주세요.')
+parser = argparse.ArgumentParser(description="pcap File Parser v0.3, create by 홍지후, 정다운, 송영훈, 김가겸, 고채훈, 장인기")
+# pcap 파일 인자 추가
+parser.add_argument('--pcap', metavar='pcap_file_path', type=str, required=False, help='pcap파일의 경로를 입력해주세요.')
+# json 파일 인자 추가
+parser.add_argument('--json', metavar='json_file_path', type=str, required=False, help='json파일의 경로를 입력해주세요.')
 
 # 사용자로부터 전달받은 args
 args = parser.parse_args()
