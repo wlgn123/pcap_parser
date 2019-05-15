@@ -21,6 +21,9 @@ def hex_to_string(hex):
     new_str = ""
     hex_count = 0
 
+    if(hex_str is None):
+        return ""
+
     while(len(hex_str) > 2):
         hex_count += 1 
 
@@ -36,7 +39,11 @@ def hex_to_string(hex):
     return str(new_str)[1:].replace('\'', '').upper()
 
 def print_hex_string(hex_str, length, sep_cout = 16):
+    if(hex_str is None):
+        return
+        
     new_str = hex_str
+
     print("{1}#{2}{0}{1}#{2}".format("[ Data ]".center(length-11),bcolors.OKBLUE, bcolors.ENDC))
     while(len(new_str) > sep_cout*3):
         print("{1}#{2}{0}{1}#{2}".format(new_str[:48].center(length-11),bcolors.OKBLUE, bcolors.ENDC))
