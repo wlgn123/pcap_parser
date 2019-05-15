@@ -15,7 +15,35 @@ from BinaryFile import BinaryFile
 
 def pcap_diff_checker(origin_pcap, file_pcap):
     print("########################")
-    
+
+def hex_to_string(hex):
+    hex_str = str(binascii.b2a_hex(hex))
+    new_str = ""
+    hex_count = 0
+
+    while(len(hex_str) > 2):
+        hex_count += 1 
+
+        new_str += hex_str[:2] + " "
+        hex_str = hex_str[2:]
+
+        if(hex_count == 16):
+            # new_str += "\r\n"
+            hex_count = 0
+
+    new_str += hex_str
+
+    return str(new_str)[1:].replace('\'', '').upper()
+
+def print_hex_string(hex_str, length, sep_cout = 16):
+    new_str = hex_str
+    print("{1}#{2}{0}{1}#{2}".format("[ Data ]".center(length-11),bcolors.OKBLUE, bcolors.ENDC))
+    while(len(new_str) > sep_cout*3):
+        print("{1}#{2}{0}{1}#{2}".format(new_str[:48].center(length-11),bcolors.OKBLUE, bcolors.ENDC))
+        new_str = new_str[sep_cout*3:]
+
+
+
 # Pcap Global Header Class
 class PcapGlobalHeader:
     # Pcap Global Header의 총 byte 길이
@@ -197,16 +225,16 @@ class PcapPacketData:
     def get_header(self):
         if(self.type_ == 'ARP'):
             self.protocolType = "ARP"
+            self.data = ""
         else:
             # 필요없는 데이터 버림
             self.data = self.data[9:]
             # 프로토콜타입 얻어오기
             self.protocolType = str(int.from_bytes(self.data[:1]  ,byteorder='big'))
             
-            if self.protocolType not in self.PROTOCOL_TYPE:
+            if(self.protocolType not in self.PROTOCOL_TYPE):
                 self.not_surport = True
                 return
-            
             self.protocolType = self.PROTOCOL_TYPE[self.protocolType]
             # 프로토콜타입 얻은 후 버림
             self.data = self.data[3:]
@@ -216,12 +244,17 @@ class PcapPacketData:
             
             self.dip = "{}.{}.{}.{}".format(self.data[0], self.data[1], self.data[2], self.data[3])
             self.data = self.data[4:]
+
             
+            if(self.protocolType == 'TCP'):
+                self.header_len = int("{:0>8b}".format(self.data[12])[:4], 2) * 4
+            else:
+                self.header_len = 8
+
             self.dport  = str(int.from_bytes(self.data[:2]  ,byteorder='big'))
             self.sport = str(int.from_bytes(self.data[2:4]  ,byteorder='big'))
             
-            self.data = self.data[4:]
-            
+            self.data = hex_to_string(self.data[self.header_len:])
 
     # 정보를 출력함.
     def print_info(self):
@@ -245,7 +278,7 @@ class PcapPacketData:
         print("{1}#{2}{0}{1}#{2}".format(dip_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
         print("{1}#{2}{0}{1}#{2}".format(sport_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
         print("{1}#{2}{0}{1}#{2}".format(dport_str.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
-        #print("{1}#{2}{0}{1}#{2}".format(self.data.center(len(title_str)-11),bcolors.OKBLUE, bcolors.ENDC))
+        print_hex_string(self.data, len(title_str))
         print("{1}{0}{2}".format("-" * (len(title_str)-9),bcolors.OKBLUE, bcolors.ENDC))
         print()
 # In[249]:
@@ -396,7 +429,7 @@ class Pcap:
                 "protocol": data.protocolType,
                 "sport": data.sport,
                 "dport": data.dport,
-                "data": ""
+                "data": data.data
             }
 
             packet_dict["packetdata"] = data_dict
