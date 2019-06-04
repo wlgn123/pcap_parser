@@ -4,6 +4,7 @@
 from datetime import datetime
 import binascii
 import sys
+import os
 import json
 
 # 프로그래스바를 위하여 사용
@@ -48,6 +49,7 @@ def print_hex_string(hex_str, length, sep_cout = 16):
     while(len(new_str) > sep_cout*3):
         print("{1}#{2}{0}{1}#{2}".format(new_str[:48].center(length-11),bcolors.OKBLUE, bcolors.ENDC))
         new_str = new_str[sep_cout*3:]
+
 
 
 
@@ -152,7 +154,49 @@ class PcapPacketHeader:
         print("{1}#{2}{0}{1}#{2}".format(ntwork_adt.center(len(title_str)-11), bcolors.OKBLUE, bcolors.ENDC))
         print("{1}#{2}{0}{1}#{2}".format(snaplen_str.center(len(title_str)-11), bcolors.OKBLUE, bcolors.ENDC))
 
+    def to_dict(self, data):
+        packet_dict = {
+                "packetnum": self.cnt,
+                "datetime": self.ts.strftime("%Y-%m-%d %H:%M:%S"),
+                "incl_len": self.incl_len,
+                "origin_len": self.orig_len,
+                "packetdata": data.to_dict()
+        }
 
+        return packet_dict
+    
+    def json_to_obj(self, json_str):
+        packet = json.loads(json_str.replace(",\n", ""))
+        
+        # 패킷 헤더 파싱
+        self.cnt = packet['packetnum']
+        self.ts = datetime.strptime(packet['datetime'], "%Y-%m-%d %H:%M:%S")
+        self.incl_len = packet['incl_len'] 
+        self.orig_len = packet['origin_len']
+    
+    def get_diff(self, other):
+        result = False
+
+        check_dict = {
+            "ts": False,
+            "incl_len": False,
+            "orig_len": False
+        }
+
+        if(not(self.ts == other.ts)):
+            check_dict['ts'] = True
+            result = True
+        
+        if(not(self.incl_len == other.incl_len)):
+            check_dict['incl_len'] = True
+            result = True
+        
+        if(not(self.orig_len == other.orig_len)):
+            check_dict['orig_len'] = True
+            result = True
+
+        return result, check_dict
+        
 # In[248]:
         
 # Pcap Packet 데이터 클래스
@@ -243,7 +287,7 @@ class PcapPacketData:
                 self.not_surport = True
                 return
             self.protocolType = self.PROTOCOL_TYPE[self.protocolType]
-            # 프로토콜타입 얻은 후 버림
+            # 프로토콜타입 얻은 후 버림 
             self.data = self.data[3:]
             #
             self.sip = "{}.{}.{}.{}".format(self.data[0], self.data[1], self.data[2], self.data[3])
@@ -288,6 +332,97 @@ class PcapPacketData:
         print_hex_string(self.data, len(title_str))
         print("{1}{0}{2}".format("-" * (len(title_str)-9),bcolors.OKBLUE, bcolors.ENDC))
         print()
+
+    def to_dict(self):
+        data_dict = {
+                "type": self.type_,
+                "smac": self.smac,
+                "dmac": self.dmac,
+                "sip": self.sip,
+                "dip": self.dip,
+                "protocol": self.protocolType,
+                "sport": self.sport,
+                "dport": self.dport,
+                "data": self.data
+            }
+
+        return data_dict
+    
+    def json_to_obj(self, json_str):
+        packet = json.loads(json_str.replace(",\n", ""))["packetdata"]
+        
+        # 프로토콜 타입
+        self.protocolType = packet['protocol']
+        # 타입
+        self.type_ = packet['type']
+        # 데이터
+        self.data = packet['data']
+        # 목적지 Mac
+        self.dmac = packet['dmac']
+        # 목적지 IP
+        self.dip = packet['dip']
+        # 목적지 포트
+        self.dport = packet['dport']
+        # 출발지 Mac
+        self.smac = packet['smac']
+        # 출발지 IP
+        self.sip = packet['sip']
+        # 출발지 포트
+        self.sport = packet['sport']
+
+    def get_diff(self, other):
+        result = False
+
+        check_dict = {
+                "type": False,
+                "smac": False,
+                "dmac": False,
+                "sip": False,
+                "dip": False,
+                "protocol": False,
+                "sport": False,
+                "dport": False,
+                "data": False
+        }
+
+        if(not(self.type_ == other.type_)):
+            check_dict['type'] = True
+            result = True
+
+        if(not(self.smac == other.smac)):
+            check_dict['smac'] = True
+            result = True
+        
+        if(not(self.dmac == other.dmac)):
+            check_dict['dmac'] = True
+            result = True
+        
+        if(not(self.sip == other.sip)):
+            check_dict['sip'] = True
+            result = True
+
+        if(not(self.dip == other.dip)):
+            check_dict['dip'] = True
+            result = True
+
+        if(not(self.protocolType == other.protocolType)):
+            check_dict['protocol'] = True
+            result = True
+
+        if(not(self.sport == other.sport)):
+            check_dict['sport'] = True
+            result = True
+            
+        if(not(self.dport == other.dport)):
+            check_dict['dport'] = True
+            result = True
+
+        if(not(self.data == other.data)):
+            check_dict['data'] = True
+            result = True
+
+        return result, check_dict
+        
 # In[249]:
 
 # Pcap 클래스
@@ -334,43 +469,81 @@ class Pcap:
     def get_packets(self):
         # prograss Bar를 위한 객체
         pbar = tqdm(total=self.byte_len)
+        # json 저장 파일 명
+        self.json_file_name = "{}.json".format(self.binary.name)
         
-        # byte_array를 모두다 소모할때까지 반복
-        while(len(self.byte_arr) > 0):
-            # packet 갯수 증가
-            self.cnt += 1
-            
-            # 패킷 해더 객체 생성
-            header = PcapPacketHeader()
-            # 패킷 해더 넘버 지정
-            header.cnt = self.cnt
-            
-            # byte_array를 패킷 헤더에 전달 -> 패킷 헤더 내용 생성 -> 나머지 byte_array 반환
-            self.byte_arr = header.get_info_from_bytes(self.byte_arr)
-            
-            # byte_array를 패킷 데이터에 전달 -> 패킷 데이터 내용 생성 -> 나머지 byte_array 반환
-            data = PcapPacketData(header.incl_len)
-            self.byte_arr = data.get_info_from_bytes(self.byte_arr)
-            
-            if(data.not_surport):
-                self.cnt -= 1
-                continue
-            
-            # list에 append
-            self.header_list.append(header)
-            self.data_list.append(data)
-            
-            # prograssBar 업데이트
-            pbar.update(header.BYTE_LENGTH + data.incl_len)
+        # dump 파일 oepn
+        with open(self.json_file_name + ".dump", 'w') as f:
+            f.write('[\n')
+            f.write(" " * 100)
+            # byte_array를 모두다 소모할때까지 반복
+            while(len(self.byte_arr) > 0):
+                # packet 갯수 증가
+                self.cnt += 1
+                
+                # 패킷 해더 객체 생성
+                header = PcapPacketHeader()
+                # 패킷 해더 넘버 지정
+                header.cnt = self.cnt
+                
+                # byte_array를 패킷 헤더에 전달 -> 패킷 헤더 내용 생성 -> 나머지 byte_array 반환
+                self.byte_arr = header.get_info_from_bytes(self.byte_arr)
+                
+                # byte_array를 패킷 데이터에 전달 -> 패킷 데이터 내용 생성 -> 나머지 byte_array 반환
+                data = PcapPacketData(header.incl_len)
+                self.byte_arr = data.get_info_from_bytes(self.byte_arr)
+                
+                # 지원하지 않는 패킷일 경우
+                if(data.not_surport):
+                    self.cnt -= 1
+                    continue
+                else:
+                    if(self.cnt > 1):
+                        f.write(",\n")
+
+                    # packet to dict
+                    packet_dict = header.to_dict(data)
+                    f.write(json.dumps(packet_dict))
+
+                # list에 append
+                # self.header_list.append(header)
+                # self.data_list.append(data)
+                
+                # prograssBar 업데이트
+                pbar.update(header.BYTE_LENGTH + data.incl_len)
+            # json array 닫기
+            f.write("\n]")
+            # 두번째 byte로 이동
+            f.seek(2)
+            # pcap 글로벌 헤더 내용 출력
+            pcap_dict = {
+                "version": self.global_header.pcap_version,
+                "snaplen": self.global_header.snaplen,
+                "packetCnt": self.cnt
+            }
+            f.write(json.dumps(pcap_dict) + ",\n")
+        
+        # 라인 개수 변수
+        line_cnt = 0
+        # dump 복사, 기존의 파일을 복사하여 새로 생성함
+        with open(self.json_file_name + ".dump", 'r') as in_file, open(self.json_file_name, 'w') as out_file:
+            while True:
+                new_line = in_file.readline()
+
+                if(not(new_line)):
+                    break
+
+                if(line_cnt < 3):
+                    new_line = new_line.strip(" ")
+
+                out_file.write(new_line)
+
+                line_cnt = line_cnt + 1
+                
+        # dump 파일 삭제
+        os.remove(self.json_file_name + ".dump")
         # prograssBar 종료
         pbar.close()
-    
-    # 모든 패킷 정보 출력
-    def print_all_packets(self):
-        for i in range(self.cnt):
-            self.header_list[i].print_info()
-            self.data_list[i].print_info()
-        print()
 
     # 지정된 패킷(패킷번호를 통하여) 정보 출력
     def print_packet(self, packet_id):
@@ -389,100 +562,76 @@ class Pcap:
     # 패킷 범위 출력
     def print_packet_range(self, start, end):
         print()
-                
-        for packet_id in range(start, end):
-            # 패킷번호에 맞는 해더와 데이터의 정보 출력.
-            self.header_list[packet_id].print_info()
-            self.data_list[packet_id].print_info()
+
+        # json파일을 통해 출력
+        with open(self.json_file_name, 'r') as f:
+            line = f.readlines()
+
+            for i in range(start + 2, end + 2):
+                # 헤더 파싱
+                header = PcapPacketHeader()
+                header.json_to_obj(line[i])
+                # 데이터 파싱
+                data = PcapPacketData(header.incl_len)
+                data.json_to_obj(line[i])
+
+                header.print_info()
+                data.print_info()
     
     def save(self):
         self.json_file_name = "{}.json".format(self.binary.name)
-
+        
         with open(self.json_file_name, 'w') as f:
-            return json.dump(self.to_dict(), f, indent=4)
+            f.write('[ \n')
 
-    def to_json(self):
-        return json.dumps(self.to_dict())
-    
-    def to_dict(self):
-        # 기본 json 구조 정의
-        pcap_dict = {
-            "info":{
+            pcap_dict = {
                 "version": self.global_header.pcap_version,
                 "snaplen": self.global_header.snaplen,
                 "packetCnt": self.cnt
-            },
-            "packets":[]
-        }
-        
-        # 패킷 해더 & 데이터 반복
-        for i in range(self.cnt):
-            header = self.header_list[i]
-            data = self.data_list[i]
-
-            packet_dict = {
-                "packetnum": header.cnt,
-                "datetime": header.ts.strftime("%Y-%m-%d %H:%M:%S"),
-                "incl_len": header.incl_len,
-                "origin_len": header.orig_len,
-                "packetdata": ""
             }
-            data_dict = {
-                "type": data.type_,
-                "smac": data.smac,
-                "dmac": data.dmac,
-                "sip": data.sip,
-                "dip": data.dip,
-                "protocol": data.protocolType,
-                "sport": data.sport,
-                "dport": data.dport,
-                "data": data.data
-            }
+            
+            f.write(json.dumps(pcap_dict)+", \n")
+            
+            # 패킷 해더 & 데이터 반복
+            for i in range(self.cnt):
+                header = self.header_list[i]
+                data = self.data_list[i]
 
-            packet_dict["packetdata"] = data_dict
-            pcap_dict["packets"].append(packet_dict)
+                packet_dict = header.to_dict(data)
 
-        return pcap_dict
+                if(i == self.cnt -1 ):
+                    f.write(json.dumps(packet_dict)+" \n ]")
+                else:
+                    f.write(json.dumps(packet_dict)+", \n")
 
-    def json_to_pcap(self, file_name = None, json_string = None):
+    def json_to_pcap(self, file_name = None):
         json_dict = ""
+        self.json_file_name = file_name
         
         # 파일이름이 지정된 경우 json 파일 내용 불러오기
         if(file_name is not None):
             with open(file_name, 'r') as f:
                 json_dict = json.loads(f.read())
-        # json 문자열이 들어온 경우
-        elif(json_string is not None):
-            json_dict = json.loads(json_string)
         else:
-            print("file_name 혹은 json_string가 없습니다.")
+            print("file_name가 없습니다.")
 
-        # 글로벌 헤더 초기화
-        self.global_header = PcapGlobalHeader()
+        with open(file_name, 'r') as f:
+            line = f.readlines()
 
-        # 글로벌 헤더 내용 파싱
-        self.global_header.magic_number = 0
-        self.global_header.network_adapter = ''
-        self.global_header.pcap_version = json_dict['info']['version']
-        self.global_header.snaplen = json_dict['info']['snaplen']
+            header = line[1]
+            json_dict = json.loads(header.replace(",\n", ""))
 
-        packet_list = json_dict['packets']
-        # 패킷 json 리스트 반복
-        for packet in packet_list:
-            # 패킷 해더 초기화
-            header = PcapPacketHeader()
-            # 패킷 헤더 파싱
-            header.cnt = packet['packetnum']
-            header.ts = datetime.strptime(packet['datetime'], "%Y-%m-%d %H:%M:%S")
-            header.incl_len = packet['incl_len'] 
-            header.orig_len = packet['origin_len']
+            # 글로벌 헤더 초기화
+            self.global_header = PcapGlobalHeader()
 
-            data_dict = packet['packetdata']
-            # 패킷 데이터 초기화
-            data = PcapPacketData(header.incl_len)
-            # 패킷 데이터 파싱
-            data.type_ = data_dict['type']
+            # 글로벌 헤더 내용 파싱
+            self.global_header.magic_number = 0
+            self.global_header.network_adapter = ''
+            self.global_header.pcap_version = json_dict['version']
+            self.global_header.snaplen = json_dict['snaplen']
+            self.cnt = json_dict['packetCnt']
 
-            self.header_list.append(header)
-            self.data_list.append(data)
         self.global_header.print_info()
+
+
+#%%

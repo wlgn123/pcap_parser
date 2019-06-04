@@ -8,11 +8,15 @@ import sys
 # 파이썬 아규먼트를 위해사용
 import argparse
 # 소켓 통신 모듈 불러오기 
-from socket import AF_INET, socket, SOCK_STREAM, gethostbyname, gethostname
+from socket import AF_INET, socket, SOCK_STREAM
 # 텍스트 포맷 관련 import
 from TextFormat import bcolors, MENU_PRINT_FORMAT, TITLE_PRINT_FORMAT
 # Pcap 클래스
-from Pcap import Pcap
+from Pcap import Pcap, PcapPacketHeader, PcapPacketData
+
+import traceback
+
+from tqdm import tqdm
 
 # In[245]:
 
@@ -22,30 +26,38 @@ class SocketServer:
     ip = None
     connected = False
 
-    def __init__(self, ip = None,port=59595):
-        if(ip is None):
-            self.ip = gethostbyname(gethostname())
-        else:
-            self.ip = ip
+    def __init__(self, ip = None, port=59595):
+        try:
+            if(ip is None):
+                print("IP를 입력해주세요.")
+            else:
+                self.ip = ip
 
-        print(self.ip)
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.bind((self.ip, port))
-        sock.settimeout(20)
-        self.sock = sock
+            # socket 설정
+            sock = socket(AF_INET, SOCK_STREAM)
+            sock.bind((self.ip, port))
+            sock.settimeout(60)
+            sock.setsockopt
 
-        print("통신 대기를 위한 소켓이 {}:{} 를 통해 열렸습니다.".format(self.ip, port))
+            self.sock = sock
+
+            print("통신 대기를 위한 소켓이 {}:{} 를 통해 열렸습니다.".format(self.ip, port))
+        except Exception as e:
+            print(e)
 
     def connect(self):
         self.sock.listen(0)
         print("CONNECT WAIT...")
-        client, addr = self.sock.accept()
-        client.settimeout(10)
+        client, addr = self.sock.accept() 
+        client.settimeout(60)
 
         print("CONNECTED FROM {}".format(addr))
         self.connected = True
 
         return client
+
+    def send(self, client, data):
+        client.sendall(data.encode())
 
     def wait_pcap(self):
         file_pcap = Pcap(None)
@@ -65,10 +77,11 @@ class SocketServer:
                 file_name = data.decode('utf-8')
                 
                 if(b'{' in data):
-                    file_name = file_name.split('{')[0]
+                    file_name = file_name.split('[')[0]
                     data = data[len(file_name):]
                 else:
                     data = b''
+                print("## " + file_name)
 
                 file_name = "recived_"+ file_name
                 
@@ -86,10 +99,89 @@ class SocketServer:
                         f.write(data)
                 print("파일 수신 성공 - 저장된 파일명 : {}".format(file_name))
                 
-                client.send(b"EOF")
-
                 file_pcap.json_to_pcap(file_name=file_name)
                 file_pcap.loaded = True
+
+                client.send(b"EOF")
+
+                check = int(client.recv(1))
+                
+                if(check == 1):
+                    # prograss Bar를 위한 객체
+                    pbar = tqdm(total=file_pcap.cnt)
+
+                    with open(file_name, 'r') as f:
+                        line = f.readlines()
+                        count = 1
+                        un_match_cnt = 0
+                        un_match_index = []
+
+                        while(True):
+                            count = count + 1
+
+                            recv = client.recv(10)
+                            
+                            if(b'EOF' in recv):
+                                break
+
+                            packet_len = int(recv.strip())
+                            
+                            recv_json = client.recv(packet_len).decode('utf-8')
+                            now_json = line[count]
+                            
+                            while(len(recv_json) < packet_len):
+                                recv_json += client.recv(packet_len- len(recv_json)).decode('utf-8')
+
+                            recv_header = PcapPacketHeader()
+                            recv_header.json_to_obj(recv_json)
+                            
+                            recv_data = PcapPacketData(recv_header.incl_len)
+                            recv_data.json_to_obj(recv_json)
+
+                            now_header = PcapPacketHeader()
+                            now_header.json_to_obj(now_json)
+
+                            now_data = PcapPacketData(now_header.incl_len)
+                            now_data.json_to_obj(now_json)
+
+                            header_check_result, header_check_dict = now_header.get_diff(recv_header)
+                            data_check_result, data_check_dict = now_data.get_diff(recv_data)
+
+                            if(header_check_result or data_check_result):
+                                un_match_cnt = un_match_cnt + 1
+                                un_match_index.append(count-1)
+
+                                client.send(b"1")
+                                self.send(client, "{:<10}".format(len(line[count])))
+                                self.send(client, line[count])
+
+                                recv_header.print_info()
+
+                                if(header_check_result):
+                                    now_header.print_info()
+
+                                    for key in header_check_dict:
+                                        if(header_check_dict[key]):
+                                            print("### {0} 불일치 ###".format(key))
+
+                                if(data_check_result):
+                                    recv_data.print_info()
+                                    now_data.print_info()
+
+                                    for key in data_check_dict:
+                                        if(data_check_dict[key]):
+                                            print("### {0} 불일치 ###".format(key))
+
+                            else:
+                                client.send(b"0")
+
+                            pbar.update()
+
+                        print("###########################################")
+                        print("### 패킷 비교 결과 ###")
+                        print("패킷 갯수 {}, 불일치 패킷 {} , 불일치 패킷 번호 {}".format(count-2, un_match_cnt, un_match_index))
+                                                        
+
                 return file_pcap
 
         except ConnectionAbortedError as e:
@@ -106,6 +198,7 @@ class SocketServer:
             print(str(e))
         except Exception as e:
             print(str(e))
+            print(traceback.format_exc())
         finally:
             client.close()
 
@@ -165,7 +258,80 @@ class SocketClient:
                     print("파일 송신 실패, 다시 시도해주세요.")
                     raise Exception()
 
+                check = True
+
+                while(True):
+                    select = input("패킷 비교 1, 통신 종료 0 : ")
                     
+                    if(select == "1"):
+                        break
+                    elif(select == "0"):
+                        check = False
+                        break
+                    else:
+                        continue
+
+                if(not(check)):
+                    self.send("0")
+                else:
+                    self.send("1")
+
+                with open(file_name, 'r') as f:
+                    line = f.readlines()
+
+                    for i in range(2, len(line)-1):
+                        self.send("{:<10}".format(len(line[i])))
+                        self.send(line[i])
+
+                        check = int(self.sock.recv(1))
+                        
+                        if(check == 1):
+                            recv = self.sock.recv(10)
+
+                            packet_len = int(recv.strip())
+                            
+                            now_json = self.sock.recv(packet_len).decode('utf-8')
+
+                            while(len(now_json) < packet_len):
+                                now_json += self.sock.recv(packet_len- len(now_json)).decode('utf-8')
+
+                            recv_json = line[i]
+
+                            recv_header = PcapPacketHeader()
+                            recv_header.json_to_obj(recv_json)
+                            
+                            recv_data = PcapPacketData(recv_header.incl_len)
+                            recv_data.json_to_obj(recv_json)
+
+                            now_header = PcapPacketHeader()
+                            now_header.json_to_obj(now_json)
+
+                            now_data = PcapPacketData(now_header.incl_len)
+                            now_data.json_to_obj(now_json)
+
+                            header_check_result, header_check_dict = now_header.get_diff(recv_header)
+                            data_check_result, data_check_dict = now_data.get_diff(recv_data)
+
+                            if(header_check_result or data_check_result):
+                                recv_header.print_info()
+
+                                if(header_check_result):
+                                    now_header.print_info()
+
+                                    for key in header_check_dict:
+                                        if(header_check_dict[key]):
+                                            print("{0} 불일치".format(key))
+
+                                if(data_check_result):
+                                    recv_data.print_info()
+                                    now_data.print_info()
+
+                                    for key in data_check_dict:
+                                        if(data_check_dict[key]):
+                                            print("{0} 불일치".format(key))
+                    
+                self.send("EOF")
+
             except Exception as e:
                 print(str(e))
             finally:
@@ -190,7 +356,6 @@ class Tui:
     # pcap 클래스
     pcap = ''
     
-    
     def __init__(self, file_path):
         # pcap 클래스 초기화
         self.pcap = Pcap(file_path)
@@ -211,7 +376,7 @@ class Tui:
             
         print("{1}{0}{2}".format("-" * (len(title_str)-1),bcolors.OKBLUE, bcolors.ENDC))
         print()
-        
+
     # 메뉴 선택
     def select_menu(self, menu_list, desc='메뉴를 선택하세요.'):
         # 제대로된 input이 들어올때 까지 반복
@@ -232,7 +397,8 @@ class Tui:
     # 메인 기능 
     def main(self):
         if(self.pcap.loaded):
-            self.pcap.save()
+            print("")
+            # self.pcap.save()
         else:
             print()
             print("--pcap 명령을 통해 pcap파일을 불러오지 않았습니다.")
@@ -252,9 +418,9 @@ class Tui:
 
             # 통신대기(수신)
             if(select == '1'):
-                reciver = SocketServer()
+                ip = input("현재 컴퓨터의 IP를 입력해주세요. : ")
+                reciver = SocketServer(ip)
                 self.pcap = reciver.wait_pcap()
-
 
             if(select == '2'):
                 # IP 입력 요청
@@ -266,27 +432,6 @@ class Tui:
                 sender.connect()
                 # json 파일 전송
                 sender.send_file(self.pcap.json_file_name)
-
-                # 통신 메뉴 딕셔너리
-                CONN_MENU = {
-                    '1':'1. 자동 스킵 모드',
-                    '2':'2. 패킷 확인 모드',
-                    '3':'3. 통신 종료'
-                }
-
-                # 통신 메뉴 보여주기
-                self.show_menus(CONN_MENU, ['1','2','3'])
-                # 메뉴 선택
-                conn_select = self.select_menu(['1','2','3'])
-                
-                # 이전 메뉴로 이동시에 메인 메뉴로 이동
-                if(conn_select == '3'):
-                    sender.close()
-                    continue
-                
-                # 자동 스킵모드의 경우
-
-                # 패킷 확인 모드의 경우
 
             # 파일 내용확인
             if(select == '3'):
@@ -311,7 +456,7 @@ class Tui:
         page_per_packets = 4
         
         now_page = 1
-        tot_len = int(len(self.pcap.data_list))
+        tot_len = self.pcap.cnt
         tot_page = int(tot_len / page_per_packets)
         
         # 마지막 페이지가 페이지별 패킷 갯수로 나뉘는지 확인( 3개, 2개, 등..)
@@ -340,6 +485,8 @@ class Tui:
                     self.pcap.print_packet_range(start, end)
                     # 이전페이지, 다음페이지, 이전메뉴중 선택
                     select = self.select_menu(menu_list=['1','2','3','4','5'], desc="({} / {}) 1: 첫번째페이지    2: 이전페이지    3: 다음페이지    4: 마지막페이지    5: 이전 메뉴".format(now_page, tot_page))
+
+                    os.system('cls')
                     
                     # 첫번째 페이지 이동
                     if(select == '1'):
