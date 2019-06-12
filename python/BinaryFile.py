@@ -29,6 +29,7 @@ class BinaryFile:
 
                 self.bytes_array = string
         except Exception:
+            print("잘못된 파일 경로 입니다.")
             return None
 
     # 헥스 단위 여백을 추가하기 위한 메소드

@@ -6,6 +6,7 @@ import binascii
 import sys
 import os
 import json
+import portalocker 
 
 # 프로그래스바를 위하여 사용
 from tqdm import tqdm
@@ -49,9 +50,6 @@ def print_hex_string(hex_str, length, sep_cout = 16):
     while(len(new_str) > sep_cout*3):
         print("{1}#{2}{0}{1}#{2}".format(new_str[:48].center(length-11),bcolors.OKBLUE, bcolors.ENDC))
         new_str = new_str[sep_cout*3:]
-
-
-
 
 # Pcap Global Header Class
 class PcapGlobalHeader:
@@ -453,6 +451,7 @@ class Pcap:
                 self.byte_arr, self.byte_len = self.binary.get_bytes_array()
                 # 글로벌 해더 객체 초기화 
                 self.global_header = PcapGlobalHeader()
+
                 # byte_array를 글로벌 헤더에 전달 -> 글로벌 헤더 내용 생성 -> 나머지 byte_array 반환
                 self.byte_arr = self.global_header.get_info_from_bytes(self.byte_arr)
                 
@@ -462,8 +461,10 @@ class Pcap:
                 self.loaded = True
         except FileNotFoundError:
             print("올바른 파일이 아니거나 파일이 존재하지 않습니다. 다시 확인해주세요.")
-            sys.exit(0)
-
+            self.loaded = False
+        except Exception:
+            print("pcap 파일을 불러오지 못했습니다.")
+            self.loaded = False
     
     # packet 헤더 리스트 및 pakcet 데이터 리스트 초기화
     def get_packets(self):
@@ -471,79 +472,86 @@ class Pcap:
         pbar = tqdm(total=self.byte_len)
         # json 저장 파일 명
         self.json_file_name = "{}.json".format(self.binary.name)
-        
-        # dump 파일 oepn
-        with open(self.json_file_name + ".dump", 'w') as f:
-            f.write('[\n')
-            f.write(" " * 100)
-            # byte_array를 모두다 소모할때까지 반복
-            while(len(self.byte_arr) > 0):
-                # packet 갯수 증가
-                self.cnt += 1
-                
-                # 패킷 해더 객체 생성
-                header = PcapPacketHeader()
-                # 패킷 해더 넘버 지정
-                header.cnt = self.cnt
-                
-                # byte_array를 패킷 헤더에 전달 -> 패킷 헤더 내용 생성 -> 나머지 byte_array 반환
-                self.byte_arr = header.get_info_from_bytes(self.byte_arr)
-                
-                # byte_array를 패킷 데이터에 전달 -> 패킷 데이터 내용 생성 -> 나머지 byte_array 반환
-                data = PcapPacketData(header.incl_len)
-                self.byte_arr = data.get_info_from_bytes(self.byte_arr)
-                
-                # 지원하지 않는 패킷일 경우
-                if(data.not_surport):
-                    self.cnt -= 1
-                    continue
-                else:
-                    if(self.cnt > 1):
-                        f.write(",\n")
+        try:
+            # dump 파일 oepn
+            with open(self.json_file_name + ".dump", 'w') as f:
+                f.write('[\n')
+                f.write(" " * 100)
+                # byte_array를 모두다 소모할때까지 반복
+                while(len(self.byte_arr) > 0):
+                    # packet 갯수 증가
+                    self.cnt += 1
+                    
+                    # 패킷 해더 객체 생성
+                    header = PcapPacketHeader()
+                    # 패킷 해더 넘버 지정
+                    header.cnt = self.cnt
+                    
+                    # byte_array를 패킷 헤더에 전달 -> 패킷 헤더 내용 생성 -> 나머지 byte_array 반환
+                    self.byte_arr = header.get_info_from_bytes(self.byte_arr)
+                    
+                    # byte_array를 패킷 데이터에 전달 -> 패킷 데이터 내용 생성 -> 나머지 byte_array 반환
+                    data = PcapPacketData(header.incl_len)
+                    self.byte_arr = data.get_info_from_bytes(self.byte_arr)
+                    
+                    # 지원하지 않는 패킷일 경우
+                    if(data.not_surport):
+                        self.cnt -= 1
+                        continue
+                    else:
+                        if(self.cnt > 1):
+                            f.write(",\n")
 
-                    # packet to dict
-                    packet_dict = header.to_dict(data)
-                    f.write(json.dumps(packet_dict))
+                        # packet to dict
+                        packet_dict = header.to_dict(data)
+                        f.write(json.dumps(packet_dict))
 
-                # list에 append
-                # self.header_list.append(header)
-                # self.data_list.append(data)
-                
-                # prograssBar 업데이트
-                pbar.update(header.BYTE_LENGTH + data.incl_len)
-            # json array 닫기
-            f.write("\n]")
-            # 두번째 byte로 이동
-            f.seek(2)
-            # pcap 글로벌 헤더 내용 출력
-            pcap_dict = {
-                "version": self.global_header.pcap_version,
-                "snaplen": self.global_header.snaplen,
-                "packetCnt": self.cnt
-            }
-            f.write(json.dumps(pcap_dict) + ",\n")
-        
-        # 라인 개수 변수
-        line_cnt = 0
-        # dump 복사, 기존의 파일을 복사하여 새로 생성함
-        with open(self.json_file_name + ".dump", 'r') as in_file, open(self.json_file_name, 'w') as out_file:
-            while True:
-                new_line = in_file.readline()
+                    # list에 append
+                    # self.header_list.append(header)
+                    # self.data_list.append(data)
+                    
+                    # prograssBar 업데이트
+                    pbar.update(header.BYTE_LENGTH + data.incl_len)
+                # json array 닫기
+                f.write("\n]")
+                # 두번째 byte로 이동
+                f.seek(2)
+                # pcap 글로벌 헤더 내용 출력
+                pcap_dict = {
+                    "version": self.global_header.pcap_version,
+                    "snaplen": self.global_header.snaplen,
+                    "packetCnt": self.cnt
+                }
+                f.write(json.dumps(pcap_dict) + ",\n")
+            
+            # 라인 개수 변수
+            line_cnt = 0
+            # dump 복사, 기존의 파일을 복사하여 새로 생성함
+            with open(self.json_file_name + ".dump", 'r') as in_file, open(self.json_file_name, 'w') as out_file:
+                while True:
+                    new_line = in_file.readline()
 
-                if(not(new_line)):
-                    break
+                    if(not(new_line)):
+                        break
 
-                if(line_cnt < 3):
-                    new_line = new_line.strip(" ")
+                    if(line_cnt < 3):
+                        new_line = new_line.strip(" ")
 
-                out_file.write(new_line)
+                    out_file.write(new_line)
 
-                line_cnt = line_cnt + 1
-                
-        # dump 파일 삭제
-        os.remove(self.json_file_name + ".dump")
-        # prograssBar 종료
-        pbar.close()
+                    line_cnt = line_cnt + 1
+                    
+            # dump 파일 삭제
+            os.remove(self.json_file_name + ".dump")
+            # prograssBar 종료
+            pbar.close()
+
+        except json.JSONDecodeError as e:
+            print("json 파싱중 에러가 발생했습니다.")
+            print(e)
+            self.loaded = False
+        except Exception as e:
+            print(e)
 
     # 지정된 패킷(패킷번호를 통하여) 정보 출력
     def print_packet(self, packet_id):
@@ -562,7 +570,6 @@ class Pcap:
     # 패킷 범위 출력
     def print_packet_range(self, start, end):
         print()
-
         # json파일을 통해 출력
         with open(self.json_file_name, 'r') as f:
             line = f.readlines()
