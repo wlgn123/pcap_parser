@@ -8,7 +8,7 @@ import sys
 # 파이썬 아규먼트를 위해사용
 import argparse
 # 소켓 통신 모듈 불러오기 
-from socket import AF_INET, socket, SOCK_STREAM
+from socket import AF_INET, socket, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 # 텍스트 포맷 관련 import
 from TextFormat import bcolors, MENU_PRINT_FORMAT, TITLE_PRINT_FORMAT
 # Pcap 클래스
@@ -35,9 +35,9 @@ class SocketServer:
 
             # socket 설정
             sock = socket(AF_INET, SOCK_STREAM)
+            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             sock.bind((self.ip, port))
             sock.settimeout(60)
-            sock.setsockopt
 
             self.sock = sock
 
@@ -118,9 +118,8 @@ class SocketServer:
 
                         while(True):
                             count = count + 1
-
                             recv = client.recv(10)
-                            
+
                             if(b'EOF' in recv):
                                 break
 
@@ -172,6 +171,12 @@ class SocketServer:
                                         if(data_check_dict[key]):
                                             print("### {0} 불일치 ###".format(key))
 
+                                continue_check = client.recv(1)
+
+                                if(continue_check == b'0'):
+                                    # EOF 신호받기
+                                    EOF = client.recv(3)
+                                    break
                             else:
                                 client.send(b"0")
 
@@ -180,7 +185,6 @@ class SocketServer:
                         print("###########################################")
                         print("### 패킷 비교 결과 ###")
                         print("패킷 갯수 {}, 불일치 패킷 {} , 불일치 패킷 번호 {}".format(count-2, un_match_cnt, un_match_index))
-                                                        
 
                 return file_pcap
 
@@ -204,7 +208,7 @@ class SocketServer:
 
         self.sock.close()
         self.connected = False
-
+        
         return file_name
 
 # 소켓 클라이언트 클래스(센더)
@@ -269,6 +273,7 @@ class SocketClient:
                         check = False
                         break
                     else:
+                        print("잘못된 입력입니다. 다시 입력해주세요.")
                         continue
 
                 if(not(check)):
@@ -279,7 +284,13 @@ class SocketClient:
                 with open(file_name, 'r') as f:
                     line = f.readlines()
 
+                    count = 1
+                    un_match_cnt = 0
+                    un_match_index = []
+
                     for i in range(2, len(line)-1):
+                        count = count + 1
+
                         self.send("{:<10}".format(len(line[i])))
                         self.send(line[i])
 
@@ -313,6 +324,9 @@ class SocketClient:
                             data_check_result, data_check_dict = now_data.get_diff(recv_data)
 
                             if(header_check_result or data_check_result):
+                                un_match_cnt = un_match_cnt + 1
+                                un_match_index.append(count-1)
+
                                 recv_header.print_info()
 
                                 if(header_check_result):
@@ -329,13 +343,52 @@ class SocketClient:
                                     for key in data_check_dict:
                                         if(data_check_dict[key]):
                                             print("{0} 불일치".format(key))
-                    
+
+                                continue_check = True
+
+                                while(True):
+                                    continue_select = input("계속하기 1, 통신 종료 0 : ")
+                                    
+                                    if(continue_select == "1"):
+                                        self.send("1")
+                                        break
+                                    elif(continue_select == "0"):
+                                        self.send("0")
+                                        continue_check = False
+                                        break
+                                    else:
+                                        print("잘못된 입력입니다. 다시 입력해주세요.")
+                                        continue
+
+                                if(not(continue_check)):
+                                    break
+
+                    print("###########################################")
+                    print("### 패킷 비교 결과 ###")
+                    print("패킷 갯수 {}, 불일치 패킷 {} , 불일치 패킷 번호 {}".format(count-2, un_match_cnt, un_match_index))
+
                 self.send("EOF")
 
+            except ConnectionAbortedError as e:
+                print("연결 중단")
+                print(str(e))
+            except ConnectionRefusedError as e:
+                print("연결 도중 문제가 발생했습니다. : ConnectionRefusedError")
+                print(str(e))
+            except ConnectionResetError as e:
+                print("연결이 초기화 되었습니다. : ConnectionResetError")
+                print(str(e))
+            except ConnectionError:
+                print("연결 도중 문제가 발생했습니다. : ConnextionError")
+                print(str(e))
+            except Exception as e:
+                print(str(e))
+                print(traceback.format_exc())
             except Exception as e:
                 print(str(e))
             finally:
                 f.close()
+                self.close()
 
     def close(self):
         self.sock.close()
@@ -421,7 +474,8 @@ class Tui:
                 ip = input("현재 컴퓨터의 IP를 입력해주세요. : ")
                 reciver = SocketServer(ip)
                 self.pcap = reciver.wait_pcap()
-
+                
+            # 통신하기(송신)
             if(select == '2'):
                 # IP 입력 요청
                 ip = input("상대 컴퓨터의 IP를 입력해주세요. : ")
