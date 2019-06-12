@@ -42,19 +42,25 @@ class SocketServer:
             self.sock = sock
 
             print("통신 대기를 위한 소켓이 {}:{} 를 통해 열렸습니다.".format(self.ip, port))
-        except Exception as e:
-            print(e)
+        except Exception:
+            print("소켓이 종료되었습니다.")
 
     def connect(self):
-        self.sock.listen(0)
-        print("CONNECT WAIT...")
-        client, addr = self.sock.accept() 
-        client.settimeout(60)
+        try:
+            client = None
+            self.sock.listen(0)
+            print("CONNECT WAIT...")
+            client, addr = self.sock.accept() 
+            client.settimeout(60)
 
-        print("CONNECTED FROM {}".format(addr))
-        self.connected = True
+            print("CONNECTED FROM {}".format(addr))
+            self.connected = True
 
-        return client
+            return client
+        except Exception:
+            print("잘못된 주소입니다.")
+            self.connected = False
+            return None
 
     def send(self, client, data):
         client.sendall(data.encode())
@@ -63,6 +69,9 @@ class SocketServer:
         file_pcap = Pcap(None)
 
         client = self.connect()
+
+        if(not(self.connected)):
+            return
         
         # 받은 json 파일을 저장할 파일명
         file_name = None
@@ -222,10 +231,13 @@ class SocketClient:
         self.sock = sock
 
     def connect(self):
-        print("WAIT CONNECTION")
-        self.sock.connect((self.host, self.port))
-        self.connected = True
-        print("CONNECTION SUCCESS")
+        try:
+            print("WAIT CONNECTION")
+            self.sock.connect((self.host, self.port))
+            self.connected = True
+            print("CONNECTION SUCCESS")
+        except Exception as e:
+            print("연결할 수 없는 주소입니다.")
 
     def send(self, data):
         if(self.connected):
@@ -435,6 +447,10 @@ class Tui:
         # 제대로된 input이 들어올때 까지 반복
         while(True):
             # 입력 받기
+            # desc 가 None일경우 텍스트 재지정
+            if(desc is None):
+                desc = "메뉴를 선택하세요."
+
             select = input("{} : ".format(desc))
             
             # 만약 정해져있는 메뉴리스트에 포함되지않는 값이 들어올 경우 반복
@@ -473,8 +489,13 @@ class Tui:
             if(select == '1'):
                 ip = input("현재 컴퓨터의 IP를 입력해주세요. : ")
                 reciver = SocketServer(ip)
-                self.pcap = reciver.wait_pcap()
-                
+                pcap = reciver.wait_pcap()
+
+                if(pcap is not None):
+                    self.pcap = pcap
+
+                del reciver
+
             # 통신하기(송신)
             if(select == '2'):
                 # IP 입력 요청
@@ -486,6 +507,8 @@ class Tui:
                 sender.connect()
                 # json 파일 전송
                 sender.send_file(self.pcap.json_file_name)
+
+                del sender
 
             # 파일 내용확인
             if(select == '3'):
