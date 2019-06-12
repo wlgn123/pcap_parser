@@ -1,5 +1,5 @@
 # Collaborators
-| [<img src="https://avatars1.githubusercontent.com/u/21700706?s=460&v=4" width="100px;"/><br /><sub><b>wlgn123</b></sub>](https://github.com/wlgn123) | [<img src="https://avatars3.githubusercontent.com/u/31751280?s=460&v=4" width="100px;"/><br /><sub><b>AllCry</b></sub>](https://github.com/AllCry) | [<img src="https://avatars3.githubusercontent.com/u/49737439?s=460&v=4" width="100px;"/><br /><sub><b>iokl1004</b></sub>](https://github.com/iokl1004) | [<img src="https://avatars3.githubusercontent.com/u/32377893?s=460&v=4" width="100px;"/><br /><sub><b>nepnep123</b></sub>](https://github.com/nepnep123) | [<img src="https://avatars3.githubusercontent.com/u/21851202?s=460&v=4" width="100px;"/><br /><sub><b>dogs1012</b></sub>](https://github.com/dogs1012) | [<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtSCLf4yaoDSZZgNEfxkE67VP9UuAX5WCzjB9nVJb9mYc5Nmi_1w" width="100px;"/><br /><sub><b> rkrua5283@gmail.com </b></sub>]() |
+| [<img src="https://avatars1.githubusercontent.com/u/21700706?s=460&v=4" width="100px;"/><br /><sub><b>wlgn123</b></sub>](https://github.com/wlgn123) | [<img src="https://avatars3.githubusercontent.com/u/31751280?s=460&v=4" width="100px;"/><br /><sub><b>AllCry</b></sub>](https://github.com/AllCry) | [<img src="https://avatars3.githubusercontent.com/u/49737439?s=460&v=4" width="100px;"/><br /><sub><b>iokl1004</b></sub>](https://github.com/iokl1004) | [<img src="https://avatars3.githubusercontent.com/u/32377893?s=460&v=4" width="100px;"/><br /><sub><b>nepnep123</b></sub>](https://github.com/nepnep123) | [<img src="https://avatars3.githubusercontent.com/u/21851202?s=460&v=4" width="100px;"/><br /><sub><b>dogs1012</b></sub>](https://github.com/dogs1012) | [<img src="https://avatars2.githubusercontent.com/u/48834283?s=460&v=4" width="100px;"/><br /><sub><b> kimgagyeom </b></sub>](https://github.com/kimgagyeom) |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 # python 개발환경 세팅
 1. # 아나콘다 다운로드
@@ -180,8 +180,8 @@ fsdf
       - 통신 하기(송신)의 서브메뉴로서 1. 자동스킵모드 , 2. 패킷 확인 모드, 3. 통신종료가 생김, v0.4에 해당 메뉴의 대한 기능 개발 예정
 
 # pcap_parser V0.4 (Devel)
-   - 소켓 클라이언트 기능 추가(통신 하기(송신)) (진행중)
-      - 1. 자동스킵모드, 2. 패킷확인모드 기능 개발 
+   - 소켓 클라이언트 기능 추가(통신 하기(송신))
+      - 
 
    - 실행 인자로 --json 추가 예정
 
